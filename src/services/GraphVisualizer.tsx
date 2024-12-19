@@ -1,4 +1,5 @@
-import { Point, FunctionCharacteristics } from '../types/FunctionTypes';
+import React from 'react';
+import { Point, FunctionCharacteristics, CircleData } from '../types/FunctionTypes';
 
 interface GraphConfig {
   width: number;
@@ -6,6 +7,12 @@ interface GraphConfig {
   padding: number;
   xRange: [number, number];
   yRange: [number, number];
+  gridStep: number;
+  showGrid: boolean;
+  showLabels: boolean;
+  fontSize: number;
+  isInteractive: boolean;
+  showHints: boolean;
 }
 
 export class GraphVisualizer {
@@ -14,7 +21,13 @@ export class GraphVisualizer {
     height: 400,
     padding: 40,
     xRange: [-10, 10],
-    yRange: [-10, 10]
+    yRange: [-10, 10],
+    gridStep: 1,
+    showGrid: true,
+    showLabels: true,
+    fontSize: 12,
+    isInteractive: true,
+    showHints: true
   };
 
   static createGraph(

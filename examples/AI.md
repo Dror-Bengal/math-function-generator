@@ -14,3 +14,5 @@ Please follow these guidelines when updating files:
 
 - Print Only Relevant Code: When providing code updates, print only the necessary and relevant sections instead of the entire file. This minimizes errors and simplifies the review process.
 - Coordinate Multi-File Changes: If a change affects multiple files, clearly specify what needs to be updated next and explain how these changes are connected.
+
+for mee- npm run clean && npm install && npm run build && npm run dev

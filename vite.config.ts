@@ -2,13 +2,18 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  base: '/math-function-generator/',
-  plugins: [react()],
-  server: {
-    port: 3000,
-    open: true
-  },
+  plugins: [
+    react({
+      jsxRuntime: 'classic',
+      babel: {
+        plugins: [
+          ['@babel/plugin-transform-react-jsx', { runtime: 'classic' }]
+        ]
+      }
+    })
+  ],
+  base: './',
   resolve: {
-    extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json']
+    extensions: ['.js', '.ts', '.jsx', '.tsx']
   }
 }); 

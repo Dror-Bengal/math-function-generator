@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React from 'react';
 import { useState, ChangeEvent } from 'react';
 import { GraphVisualizer } from './services/GraphVisualizer';
 import { 
@@ -8,6 +8,7 @@ import {
   DifficultyLevel 
 } from './types/FunctionTypes';
 import { CircleGenerator } from './services/CircleGenerator';
+import { AdaptiveLearningSystem } from './services/AdaptiveLearningSystem';
 
 // Update translations with corrected Hebrew text
 const translations = {
@@ -33,7 +34,7 @@ const translations = {
 // Update the investigations to Hebrew
 const hebrewInvestigations = {
   easy: [
-    "מצא את תחום ההגדרה של הפונקציה",
+    "מצא את תחום הה��דרה של הפונקציה",
     "מצא את נקודות החיתוך עם הצירים",
     "מצא את נקודת החיתוך עם ציר ה-y",
     "האם הפונקציה עולה או יורדת?"
@@ -71,63 +72,6 @@ interface Question {
   function: FunctionData | CircleData;
   investigations: string[];
 }
-
-// First, define the polynomial templates separately
-const polynomialTemplates: Record<'easy' | 'medium' | 'hard', DifficultyLevel> = {
-  easy: {
-    types: [
-      {
-        name: "Quadratic",
-        generator: () => {
-          const a = Math.floor(Math.random() * 3) + 1;
-          const b = Math.floor(Math.random() * 6) - 3;
-          const c = Math.floor(Math.random() * 6) - 3;
-          return {
-            expression: `f(x) = ${a}x² ${b >= 0 ? "+" : ""}${b}x ${c >= 0 ? "+" : ""}${c}`,
-            points: [a, b, c],
-            type: "quadratic",
-          };
-        },
-      }
-    ],
-    investigations: hebrewInvestigations.easy
-  },
-  medium: {
-    types: [
-      {
-        name: "Cubic",
-        generator: () => {
-          const a = Math.floor(Math.random() * 2) + 1;
-          const b = Math.floor(Math.random() * 6) - 3;
-          const c = Math.floor(Math.random() * 6) - 3;
-          const d = Math.floor(Math.random() * 6) - 3;
-          return {
-            expression: `f(x) = ${a}x³ ${b >= 0 ? "+" : ""}${b}x² ${c >= 0 ? "+" : ""}${c}x ${d >= 0 ? "+" : ""}${d}`,
-            points: [a, b, c, d],
-            type: "cubic",
-          };
-        },
-      }
-    ],
-    investigations: hebrewInvestigations.medium
-  },
-  hard: {
-    types: [
-      {
-        name: "Quartic",
-        generator: () => {
-          const coeffs = Array(5).fill(0).map(() => Math.floor(Math.random() * 4) - 2);
-          return {
-            expression: `f(x) = ${coeffs[0]}x⁴ ${coeffs[1] >= 0 ? "+" : ""}${coeffs[1]}x³ ${coeffs[2] >= 0 ? "+" : ""}${coeffs[2]}x² ${coeffs[3] >= 0 ? "+" : ""}${coeffs[3]}x ${coeffs[4] >= 0 ? "+" : ""}${coeffs[4]}`,
-            points: coeffs,
-            type: "quartic",
-          };
-        },
-      }
-    ],
-    investigations: hebrewInvestigations.hard
-  }
-};
 
 // Then update the questionTemplates
 const questionTemplates: FunctionTypes = {
@@ -249,7 +193,167 @@ const questionTemplates: FunctionTypes = {
       investigations: hebrewInvestigations.hard
     }
   },
-  [FunctionType.POLYNOMIAL]: polynomialTemplates,
+  [FunctionType.POLYNOMIAL]: {
+    easy: {
+      types: [{
+        name: translations.polynomial,
+        generator: () => {
+          const a = Math.random() > 0.5 ? 1 : -1;
+          const root1 = Math.floor(Math.random() * 3);
+          const root2 = -root1;
+          
+          console.log('Easy Polynomial:', {
+            coefficients: { a, root1, root2 },
+            type: 'quadratic'
+          });
+          
+          // Calculate b and c: f(x) = a(x-r₁)(x-r₂) = ax² + bx + c
+          const b = -a * (root1 + root2);
+          const c = a * root1 * root2;
+          
+          const vertexX = (root1 + root2) / 2;
+          const vertexY = -b*b/(4*a) + c;
+          
+          return {
+            expression: `f(x) = ${a === 1 ? '' : '-'}x² ${c >= 0 ? '+' : ''}${c}`,
+            points: [a, b, c],
+            type: "quadratic" as const,
+            characteristics: {
+              domain: "ℝ",
+              range: a > 0 ? [vertexY, Infinity] : [-Infinity, vertexY],
+              roots: root1 !== 0 ? [
+                { x: root1, y: 0 },
+                { x: root2, y: 0 }
+              ] : [{ x: 0, y: 0 }],
+              criticalPoints: [{ x: vertexX, y: vertexY }],
+              yIntercept: c
+            }
+          };
+        }
+      }],
+      investigations: hebrewInvestigations.easy
+    },
+    medium: {
+      types: [{
+        name: translations.polynomial,
+        generator: () => {
+          const a = Math.random() > 0.5 ? 1 : -1;
+          const root1 = 0;
+          const root2 = Math.floor(Math.random() * 2) + 1;
+          const root3 = -root2;
+          
+          const b = -a * (root2 + root3);  // Will be 0 due to symmetry
+          const c = a * root2 * root3;     // Will be negative
+          const d = 0;
+          
+          // Helper function to evaluate cubic at a point
+          const evaluateAt = (x: number): number => {
+            return a * x * x * x + b * x * x + c * x + d;
+          };
+          
+          // Calculate critical points (derivative = 0)
+          const criticalX = Math.sqrt(-c/(3*a));
+          const criticalPoints = [
+            { x: criticalX, y: evaluateAt(criticalX) },
+            { x: -criticalX, y: evaluateAt(-criticalX) }
+          ];
+
+          // Add inflection point (where second derivative = 0)
+          const inflectionPoint = { x: 0, y: 0 };  // For this form, always at origin
+
+          // Determine intervals
+          const increasingIntervals = a > 0 ? 
+            [[-Infinity, -criticalX], [criticalX, Infinity]] :
+            [-criticalX, criticalX];
+
+          const decreasingIntervals = a > 0 ? 
+            [-criticalX, criticalX] :
+            [[-Infinity, -criticalX], [criticalX, Infinity]];
+          
+          return {
+            expression: `f(x) = ${a === 1 ? '' : '-'}x(x² ${c >= 0 ? '+' : ''}${c})`,
+            points: [a, b, c, d],
+            type: "cubic" as const,
+            characteristics: {
+              domain: "ℝ",
+              range: "ℝ",
+              roots: [
+                { x: root1, y: 0 },
+                { x: root2, y: 0 },
+                { x: root3, y: 0 }
+              ],
+              criticalPoints,
+              inflectionPoints: [inflectionPoint],
+              increasingIntervals,
+              decreasingIntervals,
+              yIntercept: 0,
+              // Add concavity intervals
+              concaveUpIntervals: a > 0 ? [[0, Infinity]] : [[-Infinity, 0]],
+              concaveDownIntervals: a > 0 ? [[-Infinity, 0]] : [[0, Infinity]]
+            }
+          };
+        }
+      }],
+      investigations: hebrewInvestigations.medium
+    },
+    hard: {
+      types: [{
+        name: translations.polynomial,
+        generator: () => {
+          const a = Math.random() > 0.5 ? 1 : -1;
+          const root1 = Math.floor(Math.random() * 2);
+          const root2 = Math.floor(Math.random() * 2) + 1;
+          
+          const b = -a * (root1 + root2);
+          const c = a * root1 * root2;
+          
+          // Helper function to calculate area between roots
+          const calculateArea = (a: number, b: number, c: number, x1: number, x2: number): number => {
+            // Integral of ax² + bx + c from x1 to x2
+            const integral = (x: number) => (a * x * x * x / 3) + (b * x * x / 2) + (c * x);
+            return integral(x2) - integral(x1);
+          };
+          
+          const area = calculateArea(a, b, c, root1, root2);
+          const formattedArea = Number(Math.abs(area).toFixed(3));  // 3 decimal places
+          
+          console.log('Hard Polynomial:', {
+            coefficients: { a, root1, root2 },
+            area: formattedArea,
+            type: 'quadratic with area'
+          });
+          
+          return {
+            expression: `f(x) = ${a === 1 ? '' : '-'}x² + ${b}x + ${c}`,
+            points: [a, b, c],
+            type: "quadratic",
+            characteristics: {
+              domain: "ℝ",
+              range: a > 0 ? [c - b*b/(4*a), Infinity] : [-Infinity, c - b*b/(4*a)],
+              roots: [
+                { x: root1, y: 0 },
+                { x: root2, y: 0 }
+              ],
+              criticalPoints: [{ x: -b/(2*a), y: c - b*b/(4*a) }],
+              yIntercept: c,
+              areaInfo: {
+                between: [root1, root2],
+                value: formattedArea
+              }
+            }
+          };
+        }
+      }],
+      investigations: [
+        "מצא את תחום ההגדרה של הפונקציה",
+        "מצא את נקודות החיתוך עם הצירים",
+        "מצא נקודות קיצון",
+        "קבע תחומי עליה וי��ידה",
+        "קבע תחומים שבהם הפונקציה חיובית/לילית",
+        "חשב את השטח בין הפונקציה לציר x בין שורשי הפונקציה"
+      ]
+    }
+  },
   [FunctionType.RATIONAL]: {
     easy: {
       types: [{
@@ -446,7 +550,7 @@ const questionTemplates: FunctionTypes = {
       }],
       investigations: [
         "מצא את מרכז המעגל",
-        "חשב את רדיוס המעגל",
+        "שב את רדיוס המעגל",
         "מצא את נקודות החיתוך עם הצירים",
         "חשב את שטח המעגל",
         "חשב את היקף המעגל"
@@ -515,6 +619,15 @@ const MathQuestionGenerator: React.FC = () => {
   );
   const [functionType, setFunctionType] = useState<FunctionType>(FunctionType.POLYNOMIAL);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
+  const [showGraph, setShowGraph] = useState(false);
+  const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const [studentProgress, setStudentProgress] = useState({
+    successCount: 0,
+    failCount: 0,
+    currentLevel: difficulty,
+    weakAreas: [],
+    lastQuestionType: ''
+  });
 
   // Update event handlers with proper types
   const handleDifficultyChange = (e: DifficultyChangeEvent) => {
@@ -564,6 +677,12 @@ const MathQuestionGenerator: React.FC = () => {
   };
 
   const plotFunction = (func: FunctionData | CircleData) => {
+    console.log('Plotting Function:', {
+      type: func.type,
+      expression: func.expression,
+      characteristics: func.characteristics
+    });
+
     if (!func) {
       console.error('Error: No function provided to plot');
       return null;
@@ -630,6 +749,27 @@ const MathQuestionGenerator: React.FC = () => {
         range: [-10, 10]
       }
     );
+  };
+
+  const toggleGraph = () => setShowGraph(!showGraph);
+
+  const handleStepComplete = (stepIndex: number, isComplete: boolean) => {
+    const newCompletedSteps = new Set(completedSteps);
+    if (isComplete) {
+      newCompletedSteps.add(stepIndex);
+    } else {
+      newCompletedSteps.delete(stepIndex);
+    }
+    setCompletedSteps(newCompletedSteps);
+    
+    // Check progress after each step
+    if (newCompletedSteps.size === currentQuestion?.investigations.length) {
+      // All steps completed - can move to next level
+      const newProgress = AdaptiveLearningSystem.evaluateAnswer(studentProgress, 
+        Object.fromEntries(currentQuestion.investigations.map((_, i) => [i, true]))
+      );
+      setStudentProgress(newProgress);
+    }
   };
 
   return (
@@ -715,12 +855,22 @@ const MathQuestionGenerator: React.FC = () => {
 
             {/* Graph */}
             <div className="space-y-2">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-700">
-                {translations.graphTitle}
-              </h2>
-              <div className="aspect-square w-full max-w-2xl mx-auto bg-white rounded-xl p-2 sm:p-4">
-                {plotFunction(currentQuestion.function)}
+              <div className="flex justify-between items-center">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-700">
+                  {translations.graphTitle}
+                </h2>
+                <button
+                  onClick={toggleGraph}
+                  className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-800"
+                >
+                  {showGraph ? 'הסתר גרף' : 'הצג גרף'}
+                </button>
               </div>
+              {showGraph && (
+                <div className="aspect-square w-full max-w-2xl mx-auto bg-white rounded-xl p-2 sm:p-4">
+                  {plotFunction(currentQuestion.function)}
+                </div>
+              )}
             </div>
 
             {/* Investigation Steps */}
@@ -730,9 +880,17 @@ const MathQuestionGenerator: React.FC = () => {
               </h2>
               <ul className="space-y-2 text-base sm:text-lg text-gray-700">
                 {currentQuestion.investigations.map((step, index) => (
-                  <li key={index} className="flex items-start space-x-2 rtl:space-x-reverse">
-                    <span className="font-bold ml-2">{index + 1}.</span>
-                    <span>{step}</span>
+                  <li key={index} className="flex items-center space-x-2 rtl:space-x-reverse">
+                    <input
+                      type="checkbox"
+                      id={`step-${index}`}
+                      className="h-5 w-5 text-blue-600"
+                      onChange={(e) => handleStepComplete(index, e.target.checked)}
+                    />
+                    <label htmlFor={`step-${index}`} className="text-gray-700">
+                      <span className="font-bold ml-2">{index + 1}.</span>
+                      <span>{step}</span>
+                    </label>
                   </li>
                 ))}
               </ul>
