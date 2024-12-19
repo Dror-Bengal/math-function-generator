@@ -1,0 +1,646 @@
+/* eslint-disable */
+/* This is a Tailwind CSS file */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import fonts */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Mono&display=swap");
+
+/* Base styles */
+:root {
+  --primary-color: #2563eb;
+  --primary-hover: #1d4ed8;
+  --background-start: #eff6ff;
+  --background-end: #eef2ff;
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Function display */
+.function-expression {
+  font-family: "Fira Mono", monospace;
+  background: linear-gradient(to right, #f8fafc, #f1f5f9);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+/* Controls */
+.controls-container {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.control-select {
+  min-width: 120px;
+  padding: 0.5rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background-color: white;
+  transition: all 0.2s;
+}
+
+.control-select:hover {
+  border-color: var(--primary-color);
+}
+
+/* Button styles */
+.generate-button {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+}
+
+.generate-button:hover {
+  background-color: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.generate-button:active {
+  transform: translateY(0);
+}
+
+/* Question card */
+.question-card {
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  padding: 1.5rem;
+  margin: 1rem 0;
+  transition: all 0.3s;
+}
+
+.question-card:hover {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}
+
+/* Graph container */
+.graph-container {
+  background: #f8fafc;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.graph-svg {
+  width: 100%;
+  height: auto;
+  min-height: 300px;
+}
+
+/* Investigation list */
+.investigation-list {
+  list-style: none;
+  counter-reset: investigation;
+  padding: 0;
+}
+
+.investigation-list li {
+  position: relative;
+  padding-left: 2rem;
+  margin: 0.75rem 0;
+  color: var(--text-secondary);
+}
+
+.investigation-list li::before {
+  counter-increment: investigation;
+  content: counter(investigation);
+  position: absolute;
+  left: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+}
+
+/* Responsive styles */
+@media (max-width: 640px) {
+  .controls-container {
+    flex-direction: column;
+  }
+
+  .control-select,
+  .generate-button {
+    width: 100%;
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-start: #1e293b;
+    --background-end: #0f172a;
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+  }
+
+  .question-card {
+    background: #1e293b;
+  }
+
+  .function-expression {
+    background: linear-gradient(to right, #1e293b, #0f172a);
+    color: #f1f5f9;
+  }
+
+  .control-select {
+    background-color: #1e293b;
+    color: #f1f5f9;
+    border-color: #4b5563;
+  }
+
+  .graph-container {
+    background: #1e293b;
+  }
+}
+
+/* Function plot animation */
+.function-path {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: drawPath 1.5s ease-out forwards;
+}
+
+@keyframes drawPath {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Add Rubik font for Hebrew support */
+.font-rubik {
+  font-family: 'Rubik', sans-serif;
+}
+
+/* Animation for new question appearance */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* RTL support for function expression */
+.function-expression {
+  direction: ltr;
+  text-align: center;
+}
+
+/* Improved graph styling */
+.graph-container {
+  background: linear-gradient(to bottom right, #f8fafc, #f1f5f9);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+}
+
+/* Hebrew font settings */
+.font-heebo {
+  font-family: 'Heebo', sans-serif;
+}
+
+/* Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes draw-path {
+  from {
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Animation classes */
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.5s ease-out forwards;
+}
+
+/* Function expression styling */
+.function-expression {
+  direction: ltr;
+  font-family: 'Fira Mono', monospace;
+  text-align: center;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Graph styling */
+.graph-container svg {
+  width: 100%;
+  height: 300px;
+  overflow: visible;
+}
+
+.function-path {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: draw-path 1.5s ease-out forwards;
+}
+
+/* Grid lines */
+.grid-line {
+  stroke: #e5e7eb;
+  stroke-width: 1;
+}
+
+.axis-line {
+  stroke: #9ca3af;
+  stroke-width: 2;
+}
+
+/* RTL specific adjustments */
+[dir="rtl"] .space-x-reverse > * + * {
+  margin-right: 1rem;
+  margin-left: 0;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .dark\:bg-slate-800 {
+    background-color: #1e293b;
+  }
+
+  .dark\:text-white {
+    color: #ffffff;
+  }
+
+  .dark\:border-slate-700 {
+    border-color: #334155;
+  }
+
+  .grid-line {
+    stroke: #334155;
+  }
+
+  .axis-line {
+    stroke: #64748b;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .function-expression {
+    font-size: 1rem;
+    padding: 0.75rem;
+  }
+
+  .graph-container svg {
+    height: 250px;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none;
+  }
+
+  .page-break {
+    page-break-before: always;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Add these RTL-specific styles */
+/* RTL base styles */
+html[dir="rtl"] {
+  text-align: right;
+}
+
+/* Function expression (should remain LTR) */
+.direction-ltr {
+  direction: ltr;
+  text-align: center;
+  unicode-bidi: bidi-override;
+}
+
+/* RTL spacing utilities */
+.space-x-reverse > * + * {
+  margin-right: 1rem !important;
+  margin-left: 0 !important;
+}
+
+/* RTL select elements */
+select {
+  background-position: left 0.5rem center !important;
+  padding-right: 1rem !important;
+  padding-left: 2.5rem !important;
+}
+
+/* Investigation steps numbering */
+.investigation-number {
+  margin-left: 0.75rem;
+  margin-right: 0;
+}
+
+/* Graph labels (should remain LTR) */
+.graph-label {
+  direction: ltr;
+  unicode-bidi: bidi-override;
+}
+
+/* Ensure proper RTL margins for nested elements */
+[dir="rtl"] .nested-rtl > * {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+/* RTL transitions */
+.rtl-slide-in {
+  animation: rtl-slide-in 0.3s ease-out forwards;
+}
+
+@keyframes rtl-slide-in {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Graph visualization styles */
+.grid-line {
+  stroke: #e5e7eb;
+  stroke-width: 1;
+}
+
+.axis-line {
+  stroke: #4b5563;
+  stroke-width: 2;
+}
+
+.function-path {
+  stroke: #3b82f6;
+  stroke-width: 2.5;
+  transition: all 0.3s ease;
+}
+
+.special-point circle {
+  fill: white;
+  stroke: #3b82f6;
+  stroke-width: 2;
+  transition: all 0.3s ease;
+}
+
+.special-point text {
+  font-size: 12px;
+  fill: #4b5563;
+  transition: all 0.3s ease;
+  opacity: 0;
+}
+
+.special-point:hover circle {
+  fill: #3b82f6;
+  r: 6;
+}
+
+.special-point:hover text {
+  opacity: 1;
+}
+
+.roots circle {
+  stroke: #ef4444;
+}
+
+.roots:hover circle {
+  fill: #ef4444;
+}
+
+.critical-points circle {
+  stroke: #8b5cf6;
+}
+
+.critical-points:hover circle {
+  fill: #8b5cf6;
+}
+
+.inflection-points circle {
+  stroke: #10b981;
+}
+
+.inflection-points:hover circle {
+  fill: #10b981;
+}
+
+/* Animation for function plot */
+@keyframes draw-path {
+  from {
+    stroke-dashoffset: 1000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.function-path {
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: draw-path 1.5s ease-out forwards;
+}
+
+.axis-label {
+  font-size: 12px;
+  fill: #4b5563;
+  user-select: none;
+}
+
+.axis-labels text {
+  font-family: 'Fira Mono', monospace;
+}
+
+/* RTL Support */
+.rtl {
+  direction: rtl;
+}
+
+/* Base styles */
+html {
+  direction: rtl;
+}
+
+body {
+  font-family: 'Heebo', sans-serif;
+}
+
+/* Mobile-first responsive styles */
+@layer components {
+  .grid-line {
+    @apply stroke-gray-200 stroke-[0.5];
+  }
+
+  .axis-line {
+    @apply stroke-gray-400 stroke-1;
+  }
+
+  .axis-label {
+    @apply text-xs sm:text-sm fill-gray-600;
+  }
+
+  .point-label {
+    @apply text-xs sm:text-sm fill-gray-700;
+  }
+
+  .point-marker {
+    @apply fill-blue-500 stroke-white stroke-2;
+  }
+
+  /* Function expression direction fix */
+  .direction-ltr {
+    direction: ltr;
+    text-align: left;
+    unicode-bidi: embed;
+  }
+}
+
+/* Graph responsiveness */
+.graph-container {
+  @apply aspect-square w-full max-w-full overflow-hidden;
+}
+
+/* Animation classes */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 640px) {
+  .function-expression {
+    font-size: 1rem;
+    padding: 0.75rem;
+  }
+
+  .investigation-step {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  /* Ensure graph fits on mobile screens */
+  .graph-wrapper {
+    @apply mx-auto max-w-[90vw];
+  }
+}
+
+/* Ensure mathematical expressions are always LTR */
+.math-expression {
+  direction: ltr;
+  display: inline-block;
+  unicode-bidi: isolate;
+}
+
+/* Better touch targets on mobile */
+@media (max-width: 640px) {
+  select, button {
+    @apply min-h-[44px]; /* iOS minimum touch target size */
+  }
+  
+  .investigation-step {
+    @apply py-3; /* Larger touch target for list items */
+  }
+}
+
+/* Prevent text overflow in function expressions */
+.function-expression {
+  @apply overflow-x-auto whitespace-nowrap;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.function-expression::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
