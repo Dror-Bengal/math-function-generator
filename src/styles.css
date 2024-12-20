@@ -579,7 +579,43 @@ body {
 
 /* Graph responsiveness */
 .graph-container {
-  @apply aspect-square w-full max-w-full overflow-hidden;
+  @apply aspect-square w-full max-w-full overflow-hidden bg-white rounded-xl shadow-sm;
+  min-height: 300px;
+}
+
+/* Mobile-specific graph adjustments */
+@media (max-width: 640px) {
+  .graph-container {
+    min-height: 250px;
+    margin: 0.5rem 0;
+  }
+
+  /* Ensure axis labels are readable on mobile */
+  .js-plotly-plot .plotly .xtitle, 
+  .js-plotly-plot .plotly .ytitle {
+    font-size: 16px !important;
+  }
+
+  /* Ensure tick labels are readable on mobile */
+  .js-plotly-plot .plotly .xtick text, 
+  .js-plotly-plot .plotly .ytick text {
+    font-size: 12px !important;
+  }
+}
+
+/* Better visibility for grid and axes */
+.js-plotly-plot .plotly .gridlayer path {
+  stroke-width: 1 !important;
+}
+
+.js-plotly-plot .plotly .zerolinelayer path {
+  stroke-width: 2 !important;
+}
+
+/* Ensure axis labels are always visible */
+.js-plotly-plot .plotly .xtitle, 
+.js-plotly-plot .plotly .ytitle {
+  font-weight: 600 !important;
 }
 
 /* Animation classes */
@@ -643,4 +679,34 @@ body {
 
 .function-expression::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
+}
+
+/* Axis styling */
+.axis-line {
+  @apply stroke-gray-600 stroke-[1.5];
+}
+
+.axis-label {
+  @apply text-sm sm:text-base fill-gray-700 select-none font-medium;
+}
+
+.axis-title {
+  @apply text-base sm:text-lg fill-gray-800 select-none font-semibold;
+  font-family: 'Heebo', sans-serif;
+}
+
+/* Grid styling */
+.grid-line {
+  @apply stroke-gray-200 stroke-[0.5];
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 640px) {
+  .axis-label {
+    @apply text-xs;
+  }
+
+  .axis-title {
+    @apply text-sm;
+  }
 }

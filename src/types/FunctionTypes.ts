@@ -38,17 +38,68 @@ export interface Asymptotes {
   };
 }
 
+// Base interface with common properties
+export interface BaseFunctionCharacteristics {
+  domain: string | [number, number];
+  range: string | [number, number];
+  criticalPoints: Point[];
+  type?: FunctionTypeString;
+  showAxes?: boolean;
+  requireSketch?: boolean;
+}
+
+// Legacy interface (keep for backward compatibility)
 export interface FunctionCharacteristics {
+  domain: string | [number, number];
+  range: string | [number, number];
   roots: Point[];
   criticalPoints: Point[];
   inflectionPoints?: Point[];
   yIntercept: number;
-  domain: string | [number, number]; // Allow string for rational function domains
-  range: string | [number, number];  // Allow string for ranges like 'ℝ'
-  asymptotes?: Asymptotes;          // Add asymptotes for rational functions
-  period?: number;                  // For trigonometric functions
-  tangentLines?: Array<{ point: Point; slope: number }>;  // Add tangentLines property
+  asymptotes?: Asymptotes;
+  period?: number;
+  tangentLines?: Array<{ point: Point; slope: number }>;
   type?: FunctionTypeString;
+  intervals?: {
+    increasing: string[];
+    decreasing: string[];
+  };
+  areaInfo?: {
+    between: [number, number];
+    value: number;
+  };
+  showAxes?: boolean;
+  requireSketch?: boolean;
+}
+
+// New specific interfaces
+export interface LinearFunctionCharacteristics extends BaseFunctionCharacteristics {
+  roots: Point[];          // Keep for backward compatibility
+  yIntercept: number;      // Keep for backward compatibility
+  intersectionPoints: Point[]; // New consolidated property
+  slope: number;
+}
+
+export interface QuadraticFunctionCharacteristics extends BaseFunctionCharacteristics {
+  roots: Point[];
+  vertex: Point;
+  yIntercept: number;
+  areaInfo?: AreaInfo;
+  intersectionPoints?: Point[];
+}
+
+export interface RationalFunctionCharacteristics extends BaseFunctionCharacteristics {
+  asymptotes: Asymptotes;
+  holes?: Point[];
+  intersectionPoints?: Point[];
+}
+
+export interface TrigonometricFunctionCharacteristics extends BaseFunctionCharacteristics {
+  period: number;
+  amplitude: number;
+  phaseShift?: number;
+  verticalShift?: number;
+  intersectionPoints?: Point[];
 }
 
 export interface Point {

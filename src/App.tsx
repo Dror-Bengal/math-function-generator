@@ -1,7 +1,12 @@
 import React from 'react';
 import { useState, ChangeEvent } from 'react';
 import { GraphVisualizer } from './services/GraphVisualizer';
-import { FunctionType, FunctionData, CircleData } from './types/FunctionTypes';
+import { 
+  FunctionType, 
+  FunctionData, 
+  CircleData,
+  FunctionCharacteristics 
+} from './types/FunctionTypes';
 import { translations } from './templates/translations';
 import { allTemplates } from './templates/questionTemplates';
 
@@ -61,12 +66,6 @@ const MathQuestionGenerator: React.FC = () => {
   };
 
   const plotFunction = (func: FunctionData | CircleData) => {
-    console.log('Plotting Function:', {
-      type: func.type,
-      expression: func.expression,
-      characteristics: func.characteristics
-    });
-
     if (!func) {
       console.error('Error: No function provided to plot');
       return null;
@@ -76,58 +75,64 @@ const MathQuestionGenerator: React.FC = () => {
       return GraphVisualizer.createCircleGraph(func as CircleData);
     }
     
-    return GraphVisualizer.createGraph(
-      func.func || ((x: number) => {
-        try {
-          switch (func.type) {
-            case FunctionType.LINEAR:
-              return func.points[0] * x + func.points[1];
-            case FunctionType.QUADRATIC:
-              return func.points[0] * x * x + func.points[1] * x + func.points[2];
-            case FunctionType.POLYNOMIAL:
-              return func.points[0] * x * x * x + func.points[1] * x * x + 
-                     func.points[2] * x + func.points[3];
-            case FunctionType.RATIONAL: {
-              const n = func.points.length;
-              const mid = Math.floor(n/2);
-              let num = 0, den = 0;
-              
-              for (let i = 0; i < mid; i++) {
-                num += func.points[i] * Math.pow(x, mid-i-1);
-              }
-              for (let i = mid; i < n; i++) {
-                den += func.points[i] * Math.pow(x, n-i-1);
-              }
-              
-              if (Math.abs(den) < 1e-10) return undefined;
-              const result = num/den;
-              if (!isFinite(result) || Math.abs(result) > 1000) return undefined;
-              
-              return result;
+    const evaluateFunction = (x: number): number | undefined => {
+      try {
+        switch (func.type) {
+          case FunctionType.LINEAR:
+            return func.points[0] * x + func.points[1];
+          case FunctionType.QUADRATIC:
+            return func.points[0] * x * x + func.points[1] * x + func.points[2];
+          case FunctionType.POLYNOMIAL:
+            return func.points[0] * x * x * x + func.points[1] * x * x + 
+                   func.points[2] * x + func.points[3];
+          case FunctionType.RATIONAL: {
+            const n = func.points.length;
+            const mid = Math.floor(n/2);
+            let num = 0, den = 0;
+            
+            for (let i = 0; i < mid; i++) {
+              num += func.points[i] * Math.pow(x, mid-i-1);
             }
-            case FunctionType.TRIGONOMETRIC: {
-              const a = func.points[0];
-              const b = func.points[1];
-              const c = func.points[2];
-              const d = func.points[3];
-              return a * Math.sin(b * x + c) + d;
+            for (let i = mid; i < n; i++) {
+              den += func.points[i] * Math.pow(x, n-i-1);
             }
-            default:
-              console.error(`Error: Unsupported function type: ${func.type}`);
-              return 0;
+            
+            if (Math.abs(den) < 1e-10) return undefined;
+            const result = num/den;
+            if (!isFinite(result) || Math.abs(result) > 1000) return undefined;
+            
+            return result;
           }
-        } catch (error) {
-          console.error(`Error evaluating ${func.type} function:`, error);
-          return undefined;
+          case FunctionType.TRIGONOMETRIC: {
+            const a = func.points[0];
+            const b = func.points[1];
+            const c = func.points[2];
+            const d = func.points[3];
+            return a * Math.sin(b * x + c) + d;
+          }
+          default:
+            console.error(`Error: Unsupported function type: ${func.type}`);
+            return 0;
         }
-      }),
-      func.characteristics || {
-        roots: [],
-        criticalPoints: [],
-        yIntercept: 0,
-        domain: [-10, 10],
-        range: [-10, 10]
+      } catch (error) {
+        console.error('Error evaluating function:', error);
+        return 0;
       }
+    };
+
+    // Create a properly typed characteristics object with required properties
+    const characteristics: FunctionCharacteristics = {
+      domain: func.characteristics?.domain || "ℝ",
+      range: func.characteristics?.range || "ℝ",
+      roots: func.characteristics?.roots || [],
+      criticalPoints: func.characteristics?.criticalPoints || [],
+      yIntercept: func.characteristics?.yIntercept || 0,
+      type: func.type
+    };
+
+    return GraphVisualizer.plot(
+      func.func || evaluateFunction,
+      characteristics
     );
   };
 

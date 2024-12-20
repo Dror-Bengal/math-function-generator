@@ -1,5 +1,5 @@
 import React from 'react';
-import { Point, FunctionCharacteristics, CircleData, FunctionTypeString } from '../types/FunctionTypes';
+import { Point, FunctionCharacteristics, CircleData } from '../types/FunctionTypes';
 import Plot from 'react-plotly.js';
 import DebugLogger from '../utils/debugLogger';
 import { PlotData, Layout as PlotlyLayout } from 'plotly.js';
@@ -16,6 +16,7 @@ interface GraphConfig {
   fontSize: number;
   isInteractive: boolean;
   showHints: boolean;
+  showIntersectionPoints?: boolean;
   grid: {
     show: boolean;
     color: string;
@@ -26,6 +27,7 @@ interface GraphConfig {
       text: string;
       style: {
         fontSize: string;
+        fontWeight?: string;
       }
     };
     tickAmount: number;
@@ -38,6 +40,7 @@ interface GraphConfig {
       text: string;
       style: {
         fontSize: string;
+        fontWeight?: string;
       }
     };
     tickAmount: number;
@@ -47,9 +50,8 @@ interface GraphConfig {
   }
 }
 
-interface ExtendedFunctionCharacteristics extends FunctionCharacteristics {
-  type?: FunctionTypeString;
-}
+// Add debug mode constant
+const IS_DEBUG = process.env.NODE_ENV === 'development';
 
 export class GraphVisualizer {
   private static readonly DEFAULT_CONFIG: GraphConfig = {
@@ -61,9 +63,10 @@ export class GraphVisualizer {
     gridStep: 1,
     showGrid: true,
     showLabels: true,
-    fontSize: 12,
+    fontSize: 14,
     isInteractive: true,
     showHints: true,
+    showIntersectionPoints: true,
     grid: {
       show: true,
       color: '#e0e0e0',
@@ -71,9 +74,10 @@ export class GraphVisualizer {
     },
     xaxis: {
       title: {
-        text: 'x',
+        text: 'ציר x',
         style: {
-          fontSize: '14px',
+          fontSize: '16px',
+          fontWeight: '600'
         }
       },
       tickAmount: 10,
@@ -83,9 +87,10 @@ export class GraphVisualizer {
     },
     yaxis: {
       title: {
-        text: 'y',
+        text: 'ציר y',
         style: {
-          fontSize: '14px',
+          fontSize: '16px',
+          fontWeight: '600'
         }
       },
       tickAmount: 10,
@@ -95,12 +100,11 @@ export class GraphVisualizer {
     }
   };
 
-  static createGraph(
+  static plot(
     func: (x: number) => number | undefined,
-    characteristics: ExtendedFunctionCharacteristics,
+    characteristics: FunctionCharacteristics,
     config: Partial<GraphConfig> = {}
   ): JSX.Element {
-    // Merge with default config to ensure all properties are defined
     const mergedConfig: GraphConfig = {
       ...this.DEFAULT_CONFIG,
       width: 800,
@@ -117,11 +121,10 @@ export class GraphVisualizer {
       mergedConfig.xRange
     );
     
-    // Get the special points first
+    // Get all special points
     const criticalPoints = characteristics.criticalPoints || [];
     const roots = characteristics.roots || [];
-    const inflectionPoints = characteristics.inflectionPoints || [];
-    const specialPoints = [...criticalPoints, ...roots, ...inflectionPoints];
+    const specialPoints = [...criticalPoints, ...roots];
     
     // Calculate initial y-range from special points
     let minY = specialPoints.length > 0 ? Math.min(...specialPoints.map(p => p.y)) : -5;
@@ -141,22 +144,25 @@ export class GraphVisualizer {
     minY = Math.max(minY - padding, -10);
     maxY = Math.min(maxY + padding, 10);
 
-    // Ensure zero is visible if function crosses x-axis
+    // Ensure zero is visible if function has intersection points
     if (minY > 0 && roots.length > 0) minY = -1;
     if (maxY < 0 && roots.length > 0) maxY = 1;
 
     // Update merged config with calculated y-range
     mergedConfig.yRange = [minY, maxY];
 
-    // Log with explicit function type
-    DebugLogger.logPoints(points);
-    DebugLogger.logGraph({
-      ...mergedConfig,
-      functionType: characteristics.type || 'unknown',
-      calculatedYRange: [minY, maxY]
-    });
+    // Only log in debug mode
+    if (IS_DEBUG) {
+      DebugLogger.logPoints(points);
+      DebugLogger.logGraph({
+        ...mergedConfig,
+        functionType: characteristics.type || 'unknown',
+        calculatedYRange: [minY, maxY]
+      });
+    }
 
-    const trace: Partial<PlotData> = {
+    // Create the main function trace
+    const functionTrace: Partial<PlotData> = {
       x: points.map(p => p.x),
       y: points.map(p => p.y),
       type: 'scatter',
@@ -164,55 +170,131 @@ export class GraphVisualizer {
       line: { color: '#4F46E5', width: 2 }
     };
 
+    // Create intersection points trace if enabled
+    const intersectionTrace: Partial<PlotData> = {
+      x: roots.map((p: Point) => p.x),
+      y: roots.map((p: Point) => p.y),
+      type: 'scatter',
+      mode: 'text+markers',
+      marker: {
+        color: '#EF4444',
+        size: 8,
+        symbol: 'circle'
+      },
+      text: roots.map((p: Point) => `(${p.x.toFixed(1)}, ${p.y.toFixed(1)})`),
+      textposition: 'top center',
+      showlegend: false,
+      hoverinfo: 'text',
+      hovertext: roots.map((p: Point) => `(${p.x.toFixed(2)}, ${p.y.toFixed(2)})`)
+    };
+
+    // Create critical points trace
+    const criticalTrace: Partial<PlotData> = {
+      x: criticalPoints.map(p => p.x),
+      y: criticalPoints.map(p => p.y),
+      type: 'scatter',
+      mode: 'markers',
+      marker: {
+        color: '#3B82F6',
+        size: 8,
+        symbol: 'circle'
+      },
+      showlegend: false,
+      hoverinfo: 'text',
+      hovertext: criticalPoints.map(p => `(${p.x.toFixed(2)}, ${p.y.toFixed(2)})`)
+    };
+
     const layout: Partial<PlotlyLayout> = {
       width: mergedConfig.width,
       height: mergedConfig.height,
       autosize: true,
-      margin: { l: 50, r: 50, t: 50, b: 50 },
+      margin: { l: 60, r: 50, t: 50, b: 60 },
       title: 'גרף הפונקציה',
       xaxis: {
         range: mergedConfig.xRange,
         zeroline: true,
-        zerolinecolor: '#666',
-        gridcolor: '#e0e0e0',
+        zerolinecolor: '#1f2937',
+        zerolinewidth: 2,
+        gridcolor: '#9ca3af',
+        gridwidth: 1,
         showgrid: true,
         title: {
-          text: 'x',
-          standoff: 10
+          text: 'ציר x',
+          font: {
+            size: 18,
+            weight: 600,
+            family: 'Heebo, sans-serif'
+          },
+          standoff: 25
+        },
+        tickfont: {
+          size: 14,
+          family: 'Heebo, sans-serif'
+        },
+        tickmode: 'linear',
+        dtick: 2,
+        minor: {
+          ticklen: 4,
+          tickwidth: 1,
+          dtick: 1,
+          showgrid: true,
+          gridcolor: '#e5e7eb'
         }
       },
       yaxis: {
         range: mergedConfig.yRange,
         zeroline: true,
-        zerolinecolor: '#666',
-        gridcolor: '#e0e0e0',
+        zerolinecolor: '#1f2937',
+        zerolinewidth: 2,
+        gridcolor: '#9ca3af',
+        gridwidth: 1,
         showgrid: true,
         title: {
-          text: 'y',
-          standoff: 10
-        }
+          text: 'ציר y',
+          font: {
+            size: 18,
+            weight: 600,
+            family: 'Heebo, sans-serif'
+          },
+          standoff: 25
+        },
+        tickfont: {
+          size: 14,
+          family: 'Heebo, sans-serif'
+        },
+        tickmode: 'linear',
+        dtick: 2,
+        minor: {
+          ticklen: 4,
+          tickwidth: 1,
+          dtick: 1,
+          showgrid: true,
+          gridcolor: '#e5e7eb'
+        },
+        scaleanchor: 'x',
+        scaleratio: 1
       },
       showlegend: false,
       plot_bgcolor: '#fff',
-      paper_bgcolor: '#fff'
+      paper_bgcolor: '#fff',
+      font: {
+        family: 'Heebo, sans-serif',
+        size: 14
+      }
     };
 
-    DebugLogger.logLayout(layout);
+    // Only log in debug mode
+    if (IS_DEBUG) {
+      DebugLogger.logLayout(layout);
+    }
 
-    const plotProps = {
-      data: [trace],
-      layout,
-      config: {
-        displayModeBar: false,
-        responsive: true,
-        scrollZoom: true
-      },
-      style: {
-        width: '100%',
-        height: '100%'
-      },
-      useResizeHandler: true
-    };
+    const traces = [functionTrace];
+    if (mergedConfig.showIntersectionPoints) {
+      traces.push(intersectionTrace);
+    }
+    if (criticalPoints.length > 0) {
+      traces.push(criticalTrace);
+    }
 
     return (
       <div style={{ 
@@ -223,7 +305,20 @@ export class GraphVisualizer {
         boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
         overflow: 'hidden'
       }}>
-        <Plot {...plotProps} />
+        <Plot
+          data={traces}
+          layout={layout}
+          config={{
+            displayModeBar: false,
+            responsive: true,
+            scrollZoom: true
+          }}
+          style={{
+            width: '100%',
+            height: '100%'
+          }}
+          useResizeHandler={true}
+        />
       </div>
     );
   }
@@ -288,304 +383,136 @@ export class GraphVisualizer {
 
     const fullConfig = { ...this.DEFAULT_CONFIG, ...config };
     
-    return (
-      <svg 
-        className="w-full h-full"
-        viewBox={`0 0 ${fullConfig.width} ${fullConfig.height}`}
-        style={{ overflow: 'visible' }}
-      >
-        {/* Grid and Axes */}
-        {this.renderGrid(fullConfig)}
-        {this.renderAxes(fullConfig)}
-        
-        {/* Circle */}
-        {this.renderCircle(processedCircleData, fullConfig)}
-        
-        {/* Special Points */}
-        {this.renderCirclePoints(processedCircleData, fullConfig)}
-        
-        {/* Intersection Points */}
-        {processedCircleData.intersectionPoints && processedCircleData.intersectionPoints.length > 0 && 
-          this.renderIntersectionPoints(processedCircleData.intersectionPoints, fullConfig)}
-        
-        {/* Tangent Lines */}
-        {processedCircleData.characteristics?.tangentLines && 
-          this.renderTangentLines(processedCircleData.characteristics, fullConfig)}
-      </svg>
-    );
-  }
-
-  private static renderGrid(config: GraphConfig) {
-    const gridLines = [];
-    const step = 1;
-    
-    // Vertical grid lines
-    for (let x = config.xRange[0]; x <= config.xRange[1]; x += step) {
-      const xPos = this.mapX(x, config);
-      gridLines.push(
-        <line
-          key={`grid-v-${x}`}
-          x1={xPos}
-          y1={0}
-          x2={xPos}
-          y2={config.height}
-          className="grid-line"
-          strokeDasharray="4 4"
-        />
-      );
-    }
-    
-    // Horizontal grid lines
-    for (let y = config.yRange[0]; y <= config.yRange[1]; y += step) {
-      const yPos = this.mapY(y, config);
-      gridLines.push(
-        <line
-          key={`grid-h-${y}`}
-          x1={0}
-          y1={yPos}
-          x2={config.width}
-          y2={yPos}
-          className="grid-line"
-          strokeDasharray="4 4"
-        />
-      );
-    }
-    
-    return <g className="grid">{gridLines}</g>;
-  }
-
-  private static renderAxes(config: GraphConfig) {
-    const origin = {
-      x: this.mapX(0, config),
-      y: this.mapY(0, config)
+    // Create circle-specific layout
+    const circleLayout: Partial<PlotlyLayout> = {
+      width: fullConfig.width,
+      height: fullConfig.height,
+      autosize: true,
+      margin: { l: 60, r: 50, t: 50, b: 60 },
+      title: 'גרף הפונקציה',
+      xaxis: {
+        zeroline: true,
+        zerolinecolor: '#1f2937',
+        zerolinewidth: 2,
+        gridcolor: '#9ca3af',
+        gridwidth: 1,
+        showgrid: true,
+        title: {
+          text: 'ציר x',
+          font: {
+            size: 18,
+            weight: 600,
+            family: 'Heebo, sans-serif'
+          },
+          standoff: 25
+        },
+        tickfont: {
+          size: 14,
+          family: 'Heebo, sans-serif'
+        },
+        tickmode: 'linear',
+        dtick: 2,
+        minor: {
+          ticklen: 4,
+          tickwidth: 1,
+          dtick: 1,
+          showgrid: true,
+          gridcolor: '#e5e7eb'
+        },
+        range: [
+          processedCircleData.center.x - processedCircleData.radius * 1.2,
+          processedCircleData.center.x + processedCircleData.radius * 1.2
+        ]
+      },
+      yaxis: {
+        zeroline: true,
+        zerolinecolor: '#1f2937',
+        zerolinewidth: 2,
+        gridcolor: '#9ca3af',
+        gridwidth: 1,
+        showgrid: true,
+        title: {
+          text: 'ציר y',
+          font: {
+            size: 18,
+            weight: 600,
+            family: 'Heebo, sans-serif'
+          },
+          standoff: 25
+        },
+        tickfont: {
+          size: 14,
+          family: 'Heebo, sans-serif'
+        },
+        tickmode: 'linear',
+        dtick: 2,
+        minor: {
+          ticklen: 4,
+          tickwidth: 1,
+          dtick: 1,
+          showgrid: true,
+          gridcolor: '#e5e7eb'
+        },
+        scaleanchor: 'x',
+        scaleratio: 1,
+        range: [
+          processedCircleData.center.y - processedCircleData.radius * 1.2,
+          processedCircleData.center.y + processedCircleData.radius * 1.2
+        ]
+      },
+      showlegend: false,
+      plot_bgcolor: '#fff',
+      paper_bgcolor: '#fff',
+      font: {
+        family: 'Heebo, sans-serif',
+        size: 14
+      }
     };
-
+    
     return (
-      <g className="axes">
-        {/* X-axis */}
-        <line
-          x1={0}
-          y1={origin.y}
-          x2={config.width}
-          y2={origin.y}
-          className="axis-line"
+      <div style={{ 
+        width: '100%',
+        height: '500px',
+        backgroundColor: '#fff',
+        borderRadius: '8px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+        overflow: 'hidden'
+      }}>
+        <Plot
+          data={[{
+            type: 'scatter',
+            mode: 'lines',
+            x: this.generateCirclePoints(processedCircleData).x,
+            y: this.generateCirclePoints(processedCircleData).y,
+            line: { color: '#4F46E5', width: 2 }
+          }]}
+          layout={circleLayout}
+          config={{
+            displayModeBar: false,
+            responsive: true,
+            scrollZoom: true
+          }}
+          style={{
+            width: '100%',
+            height: '100%'
+          }}
+          useResizeHandler={true}
         />
-        {/* Y-axis */}
-        <line
-          x1={origin.x}
-          y1={0}
-          x2={origin.x}
-          y2={config.height}
-          className="axis-line"
-        />
-        {/* Axis labels */}
-        {this.renderAxisLabels(config)}
-      </g>
+      </div>
     );
   }
 
-  private static renderAxisLabels(config: GraphConfig) {
-    const labels = [];
-    const step = 1;
+  private static generateCirclePoints(circleData: CircleData) {
+    const points = 100;
+    const x = [];
+    const y = [];
     
-    // X-axis labels
-    for (let x = config.xRange[0]; x <= config.xRange[1]; x += step) {
-      if (x === 0) continue; // Skip 0 as it's the origin
-      labels.push(
-        <text
-          key={`label-x-${x}`}
-          x={this.mapX(x, config)}
-          y={this.mapY(0, config) + 20}
-          textAnchor="middle"
-          className="axis-label"
-        >
-          {x}
-        </text>
-      );
-    }
-    
-    // Y-axis labels
-    for (let y = config.yRange[0]; y <= config.yRange[1]; y += step) {
-      if (y === 0) continue; // Skip 0 as it's the origin
-      labels.push(
-        <text
-          key={`label-y-${y}`}
-          x={this.mapX(0, config) - 20}
-          y={this.mapY(y, config)}
-          textAnchor="end"
-          dominantBaseline="middle"
-          className="axis-label"
-        >
-          {y}
-        </text>
-      );
+    for (let i = 0; i <= points; i++) {
+      const angle = (2 * Math.PI * i) / points;
+      x.push(circleData.center.x + circleData.radius * Math.cos(angle));
+      y.push(circleData.center.y + circleData.radius * Math.sin(angle));
     }
     
-    return <g className="axis-labels">{labels}</g>;
-  }
-
-  private static renderCircle(circleData: CircleData, config: GraphConfig) {
-    if (!circleData || !circleData.center) {
-      console.error('Invalid circle data:', circleData);
-      return null;
-    }
-
-    const { center, radius } = circleData;
-    const cx = this.mapX(center.x, config);
-    const cy = this.mapY(center.y, config);
-    const r = radius * ((config.width - 2 * config.padding) / (config.xRange[1] - config.xRange[0]));
-
-    return (
-      <g className="circle">
-        <circle
-          cx={cx}
-          cy={cy}
-          r={r}
-          fill="none"
-          stroke="#3b82f6"
-          strokeWidth="2"
-          className="circle-path"
-        />
-        {/* Center point */}
-        <circle
-          cx={cx}
-          cy={cy}
-          r="3"
-          fill="#3b82f6"
-          className="center-point"
-        />
-        <text
-          x={cx}
-          y={cy - 10}
-          textAnchor="middle"
-          className="point-label"
-        >
-          O({center.x}, {center.y})
-        </text>
-      </g>
-    );
-  }
-
-  private static renderCirclePoints(circleData: CircleData, config: GraphConfig) {
-    if (!circleData || !circleData.center || !circleData.radius) {
-      return null;
-    }
-
-    const { center, radius } = circleData;
-    const points = [
-      { x: center.x + radius, y: center.y }, // Right
-      { x: center.x - radius, y: center.y }, // Left
-      { x: center.x, y: center.y + radius }, // Top
-      { x: center.x, y: center.y - radius }  // Bottom
-    ];
-
-    return (
-      <g className="circle-points">
-        {points.map((point, index) => (
-          <g key={`point-${index}`} className="special-point">
-            <circle
-              cx={this.mapX(point.x, config)}
-              cy={this.mapY(point.y, config)}
-              r="3"
-              fill="white"
-              stroke="#3b82f6"
-              strokeWidth="2"
-            />
-            <text
-              x={this.mapX(point.x, config)}
-              y={this.mapY(point.y, config) - 10}
-              textAnchor="middle"
-              className="point-label"
-            >
-              ({point.x}, {point.y})
-            </text>
-          </g>
-        ))}
-      </g>
-    );
-  }
-
-  private static renderIntersectionPoints(points: Point[], config: GraphConfig) {
-    return (
-      <g className="intersection-points">
-        {points.map((point, index) => (
-          <g key={`intersection-${index}`} className="special-point">
-            <circle
-              cx={this.mapX(point.x, config)}
-              cy={this.mapY(point.y, config)}
-              r="3"
-              fill="white"
-              stroke="#ef4444"
-              strokeWidth="2"
-            />
-            <text
-              x={this.mapX(point.x, config)}
-              y={this.mapY(point.y, config) - 10}
-              textAnchor="middle"
-              className="point-label"
-            >
-              ({point.x.toFixed(1)}, {point.y.toFixed(1)})
-            </text>
-          </g>
-        ))}
-      </g>
-    );
-  }
-
-  private static renderTangentLines(
-    characteristics: FunctionCharacteristics,
-    config: GraphConfig
-  ) {
-    if (!characteristics.tangentLines) return null;
-
-    return (
-      <g className="tangent-lines">
-        {characteristics.tangentLines.map((line, index) => {
-          const x1 = line.point.x - 5;
-          const x2 = line.point.x + 5;
-          const y1 = line.point.y - line.slope * 5;
-          const y2 = line.point.y + line.slope * 5;
-
-          return (
-            <g key={`tangent-${index}`}>
-              <line
-                x1={this.mapX(x1, config)}
-                y1={this.mapY(y1, config)}
-                x2={this.mapX(x2, config)}
-                y2={this.mapY(y2, config)}
-                stroke="#8b5cf6"
-                strokeWidth="2"
-                strokeDasharray="4 4"
-              />
-              <circle
-                cx={this.mapX(line.point.x, config)}
-                cy={this.mapY(line.point.y, config)}
-                r="3"
-                fill="white"
-                stroke="#8b5cf6"
-                strokeWidth="2"
-              />
-            </g>
-          );
-        })}
-      </g>
-    );
-  }
-
-  private static mapX(x: number, config: GraphConfig): number {
-    return (
-      ((x - config.xRange[0]) / (config.xRange[1] - config.xRange[0])) *
-      (config.width - 2 * config.padding) +
-      config.padding
-    );
-  }
-
-  private static mapY(y: number, config: GraphConfig): number {
-    return (
-      config.height -
-      (((y - config.yRange[0]) / (config.yRange[1] - config.yRange[0])) *
-      (config.height - 2 * config.padding) +
-      config.padding)
-    );
+    return { x, y };
   }
 } 
