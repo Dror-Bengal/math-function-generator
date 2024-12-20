@@ -1,5 +1,8 @@
 import React from 'react';
-import { Point, FunctionCharacteristics, CircleData } from '../types/FunctionTypes';
+import { Point, FunctionCharacteristics, CircleData, FunctionTypeString } from '../types/FunctionTypes';
+import Plot from 'react-plotly.js';
+import DebugLogger from '../utils/debugLogger';
+import { PlotData, Layout as PlotlyLayout } from 'plotly.js';
 
 interface GraphConfig {
   width: number;
@@ -13,12 +16,45 @@ interface GraphConfig {
   fontSize: number;
   isInteractive: boolean;
   showHints: boolean;
+  grid: {
+    show: boolean;
+    color: string;
+    drawBorder: boolean;
+  };
+  xaxis: {
+    title: {
+      text: string;
+      style: {
+        fontSize: string;
+      }
+    };
+    tickAmount: number;
+    labels: {
+      formatter: (value: number) => string;
+    }
+  };
+  yaxis: {
+    title: {
+      text: string;
+      style: {
+        fontSize: string;
+      }
+    };
+    tickAmount: number;
+    labels: {
+      formatter: (value: number) => string;
+    }
+  }
+}
+
+interface ExtendedFunctionCharacteristics extends FunctionCharacteristics {
+  type?: FunctionTypeString;
 }
 
 export class GraphVisualizer {
   private static readonly DEFAULT_CONFIG: GraphConfig = {
-    width: 400,
-    height: 400,
+    width: 800,
+    height: 600,
     padding: 40,
     xRange: [-10, 10],
     yRange: [-10, 10],
@@ -27,60 +63,229 @@ export class GraphVisualizer {
     showLabels: true,
     fontSize: 12,
     isInteractive: true,
-    showHints: true
+    showHints: true,
+    grid: {
+      show: true,
+      color: '#e0e0e0',
+      drawBorder: true,
+    },
+    xaxis: {
+      title: {
+        text: 'x',
+        style: {
+          fontSize: '14px',
+        }
+      },
+      tickAmount: 10,
+      labels: {
+        formatter: (value: number) => value.toFixed(1)
+      }
+    },
+    yaxis: {
+      title: {
+        text: 'y',
+        style: {
+          fontSize: '14px',
+        }
+      },
+      tickAmount: 10,
+      labels: {
+        formatter: (value: number) => value.toFixed(1)
+      }
+    }
   };
 
   static createGraph(
     func: (x: number) => number | undefined,
-    characteristics: FunctionCharacteristics,
+    characteristics: ExtendedFunctionCharacteristics,
     config: Partial<GraphConfig> = {}
-  ) {
-    const fullConfig = { ...this.DEFAULT_CONFIG, ...config };
-    
-    return (
-      <svg 
-        className="w-full h-full"
-        viewBox={`0 0 ${fullConfig.width} ${fullConfig.height}`}
-        style={{ overflow: 'visible' }}
-      >
-        {/* Add clipping path */}
-        <defs>
-          <clipPath id="graphClip">
-            <rect
-              x={fullConfig.padding}
-              y={fullConfig.padding}
-              width={fullConfig.width - 2 * fullConfig.padding}
-              height={fullConfig.height - 2 * fullConfig.padding}
-            />
-          </clipPath>
-        </defs>
+  ): JSX.Element {
+    // Merge with default config to ensure all properties are defined
+    const mergedConfig: GraphConfig = {
+      ...this.DEFAULT_CONFIG,
+      width: 800,
+      height: 500,
+      xRange: [-5, 5],
+      ...config
+    };
 
-        {/* Grid and Axes */}
-        {this.renderGrid(fullConfig)}
-        {this.renderAxes(fullConfig)}
-        
-        {/* Function Plot with clipping */}
-        <g clipPath="url(#graphClip)">
-          {this.renderFunction(func, fullConfig)}
-        </g>
-        
-        {/* Special Points */}
-        {characteristics.roots && this.renderRoots(characteristics.roots, fullConfig)}
-        {characteristics.criticalPoints && this.renderCriticalPoints(characteristics.criticalPoints, fullConfig)}
-        {typeof characteristics.yIntercept === 'number' && this.renderYIntercept(characteristics.yIntercept, fullConfig)}
-        {characteristics.inflectionPoints && 
-          this.renderInflectionPoints(characteristics.inflectionPoints, fullConfig)}
-        
-        {/* Labels */}
-        {this.renderLabels(characteristics, fullConfig)}
-      </svg>
+    const points = this.generatePoints(
+      func, 
+      mergedConfig.xRange[0], 
+      mergedConfig.xRange[1],
+      mergedConfig.width,
+      mergedConfig.xRange
+    );
+    
+    // Get the special points first
+    const criticalPoints = characteristics.criticalPoints || [];
+    const roots = characteristics.roots || [];
+    const inflectionPoints = characteristics.inflectionPoints || [];
+    const specialPoints = [...criticalPoints, ...roots, ...inflectionPoints];
+    
+    // Calculate initial y-range from special points
+    let minY = specialPoints.length > 0 ? Math.min(...specialPoints.map(p => p.y)) : -5;
+    let maxY = specialPoints.length > 0 ? Math.max(...specialPoints.map(p => p.y)) : 5;
+
+    // Add points data to range calculation
+    const yValues = points.map(p => p.y).filter(y => !isNaN(y) && isFinite(y));
+    if (yValues.length > 0) {
+      minY = Math.min(minY, ...yValues);
+      maxY = Math.max(maxY, ...yValues);
+    }
+
+    // Ensure reasonable limits with some padding
+    const range = maxY - minY;
+    const padding = Math.min(range * 0.1, 2);
+    
+    minY = Math.max(minY - padding, -10);
+    maxY = Math.min(maxY + padding, 10);
+
+    // Ensure zero is visible if function crosses x-axis
+    if (minY > 0 && roots.length > 0) minY = -1;
+    if (maxY < 0 && roots.length > 0) maxY = 1;
+
+    // Update merged config with calculated y-range
+    mergedConfig.yRange = [minY, maxY];
+
+    // Log with explicit function type
+    DebugLogger.logPoints(points);
+    DebugLogger.logGraph({
+      ...mergedConfig,
+      functionType: characteristics.type || 'unknown',
+      calculatedYRange: [minY, maxY]
+    });
+
+    const trace: Partial<PlotData> = {
+      x: points.map(p => p.x),
+      y: points.map(p => p.y),
+      type: 'scatter',
+      mode: 'lines',
+      line: { color: '#4F46E5', width: 2 }
+    };
+
+    const layout: Partial<PlotlyLayout> = {
+      width: mergedConfig.width,
+      height: mergedConfig.height,
+      autosize: true,
+      margin: { l: 50, r: 50, t: 50, b: 50 },
+      title: 'גרף הפונקציה',
+      xaxis: {
+        range: mergedConfig.xRange,
+        zeroline: true,
+        zerolinecolor: '#666',
+        gridcolor: '#e0e0e0',
+        showgrid: true,
+        title: {
+          text: 'x',
+          standoff: 10
+        }
+      },
+      yaxis: {
+        range: mergedConfig.yRange,
+        zeroline: true,
+        zerolinecolor: '#666',
+        gridcolor: '#e0e0e0',
+        showgrid: true,
+        title: {
+          text: 'y',
+          standoff: 10
+        }
+      },
+      showlegend: false,
+      plot_bgcolor: '#fff',
+      paper_bgcolor: '#fff'
+    };
+
+    DebugLogger.logLayout(layout);
+
+    const plotProps = {
+      data: [trace],
+      layout,
+      config: {
+        displayModeBar: false,
+        responsive: true,
+        scrollZoom: true
+      },
+      style: {
+        width: '100%',
+        height: '100%'
+      },
+      useResizeHandler: true
+    };
+
+    return (
+      <div style={{ 
+        width: '100%',
+        height: '500px',
+        backgroundColor: '#fff',
+        borderRadius: '8px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+        overflow: 'hidden'
+      }}>
+        <Plot {...plotProps} />
+      </div>
     );
   }
 
+  private static generatePoints(
+    func: (x: number) => number | undefined,
+    start: number,
+    end: number,
+    graphWidth: number,
+    xRange: [number, number]
+  ): Point[] {
+    const xScale = graphWidth / (xRange[1] - xRange[0]);
+    const numPoints = Math.floor(xScale * (end - start));
+    
+    const result: Point[] = [];
+    let lastValidY: number | undefined;
+    
+    for (let i = 0; i < numPoints; i++) {
+      const x = start + (i * (end - start)) / (numPoints - 1);
+      const y = func(x);
+      
+      if (y !== undefined && !isNaN(y) && isFinite(y)) {
+        if (Math.abs(y) > 10) {
+          if (lastValidY !== undefined && Math.abs(lastValidY) <= 10) {
+            const interpolatedX = x - ((end - start) / (numPoints - 1)) / 2;
+            const interpolatedY = (lastValidY + 10 * Math.sign(y)) / 2;
+            result.push({ x: interpolatedX, y: interpolatedY });
+          }
+          result.push({ x, y: 10 * Math.sign(y) });
+        } else {
+          result.push({ x, y });
+          lastValidY = y;
+        }
+      }
+    }
+    
+    return result;
+  }
+
   static createCircleGraph(
-    circleData: CircleData,
+    circleData: CircleData | any,
     config: Partial<GraphConfig> = {}
   ) {
+    // Handle case where center and radius are in characteristics
+    const processedCircleData: CircleData = {
+      ...circleData,
+      center: circleData.center || circleData.characteristics?.center || { x: 0, y: 0 },
+      radius: circleData.radius || circleData.characteristics?.radius || 1,
+      type: circleData.type,
+      expression: circleData.expression,
+      points: circleData.points,
+      characteristics: circleData.characteristics,
+      equation: circleData.equation || circleData.expression,
+      intersectionPoints: circleData.intersectionPoints || circleData.characteristics?.xIntersections || [],
+      tangentPoints: circleData.tangentPoints || []
+    };
+
+    if (!processedCircleData.center || !processedCircleData.radius) {
+      console.error('Invalid circle data:', circleData);
+      return null;
+    }
+
     const fullConfig = { ...this.DEFAULT_CONFIG, ...config };
     
     return (
@@ -94,18 +299,18 @@ export class GraphVisualizer {
         {this.renderAxes(fullConfig)}
         
         {/* Circle */}
-        {this.renderCircle(circleData, fullConfig)}
+        {this.renderCircle(processedCircleData, fullConfig)}
         
         {/* Special Points */}
-        {this.renderCirclePoints(circleData, fullConfig)}
+        {this.renderCirclePoints(processedCircleData, fullConfig)}
         
         {/* Intersection Points */}
-        {circleData.intersectionPoints && 
-          this.renderIntersectionPoints(circleData.intersectionPoints, fullConfig)}
+        {processedCircleData.intersectionPoints && processedCircleData.intersectionPoints.length > 0 && 
+          this.renderIntersectionPoints(processedCircleData.intersectionPoints, fullConfig)}
         
         {/* Tangent Lines */}
-        {circleData.characteristics?.tangentLines && 
-          this.renderTangentLines(circleData.characteristics.tangentLines, fullConfig)}
+        {processedCircleData.characteristics?.tangentLines && 
+          this.renderTangentLines(processedCircleData.characteristics, fullConfig)}
       </svg>
     );
   }
@@ -179,163 +384,6 @@ export class GraphVisualizer {
     );
   }
 
-  private static renderFunction(
-    func: (x: number) => number | undefined,
-    config: GraphConfig
-  ): JSX.Element {
-    const points: string[] = [];
-    const step = (config.xRange[1] - config.xRange[0]) / 200;
-    
-    let lastY: number | undefined;
-    
-    for (let x = config.xRange[0]; x <= config.xRange[1]; x += step) {
-      const y = func(x);
-      
-      // Skip undefined points or points outside the range
-      if (y === undefined || isNaN(y) || Math.abs(y) > 1000) {
-        lastY = undefined;
-        continue;
-      }
-      
-      const px = this.mapX(x, config);
-      const py = this.mapY(y, config);
-      
-      // Start a new path segment if there was a break
-      if (lastY === undefined) {
-        points.push(`M ${px} ${py}`);
-      } else {
-        points.push(`L ${px} ${py}`);
-      }
-      
-      lastY = y;
-    }
-    
-    return <path d={points.join(' ')} stroke="#4F46E5" strokeWidth="2" fill="none" />;
-  }
-
-  private static renderSpecialPoint(
-    point: Point,
-    config: GraphConfig,
-    className: string
-  ) {
-    return (
-      <g className={`special-point ${className}`}>
-        <circle
-          cx={this.mapX(point.x, config)}
-          cy={this.mapY(point.y, config)}
-          r="4"
-          className="point-marker"
-        />
-        <text
-          x={this.mapX(point.x, config)}
-          y={this.mapY(point.y, config) - 10}
-          className="point-label"
-          textAnchor="middle"
-        >
-          ({point.x.toFixed(1)}, {point.y.toFixed(1)})
-        </text>
-      </g>
-    );
-  }
-
-  private static renderRoots(roots: Point[], config: GraphConfig) {
-    return (
-      <g className="roots">
-        {roots.map((root, index) => (
-          <g key={`root-${index}-${root.x}-${root.y}`} className="special-point">
-            <circle
-              cx={this.mapX(root.x, config)}
-              cy={this.mapY(root.y, config)}
-              r="3"
-              fill="white"
-              stroke="#ef4444"
-              strokeWidth="2"
-            />
-            <text
-              x={this.mapX(root.x, config)}
-              y={this.mapY(root.y, config) - 10}
-              textAnchor="middle"
-              className="point-label"
-            >
-              ({root.x.toFixed(1)}, {root.y.toFixed(1)})
-            </text>
-          </g>
-        ))}
-      </g>
-    );
-  }
-
-  private static renderCriticalPoints(points: Point[], config: GraphConfig) {
-    return (
-      <g className="critical-points">
-        {points.map((point, index) => (
-          <g key={`critical-${index}-${point.x}-${point.y}`} className="special-point">
-            <circle
-              cx={this.mapX(point.x, config)}
-              cy={this.mapY(point.y, config)}
-              r="3"
-              fill="white"
-              stroke="#8b5cf6"
-              strokeWidth="2"
-            />
-            <text
-              x={this.mapX(point.x, config)}
-              y={this.mapY(point.y, config) - 10}
-              textAnchor="middle"
-              className="point-label"
-            >
-              ({point.x.toFixed(1)}, {point.y.toFixed(1)})
-            </text>
-          </g>
-        ))}
-      </g>
-    );
-  }
-
-  private static renderInflectionPoints(points: Point[], config: GraphConfig) {
-    return (
-      <g className="inflection-points">
-        {points.map((point, index) => (
-          <g key={`inflection-${index}-${point.x}-${point.y}`} className="special-point">
-            <circle
-              cx={this.mapX(point.x, config)}
-              cy={this.mapY(point.y, config)}
-              r="3"
-              fill="white"
-              stroke="#10b981"
-              strokeWidth="2"
-            />
-            <text
-              x={this.mapX(point.x, config)}
-              y={this.mapY(point.y, config) - 10}
-              textAnchor="middle"
-              className="point-label"
-            >
-              ({point.x.toFixed(1)}, {point.y.toFixed(1)})
-            </text>
-          </g>
-        ))}
-      </g>
-    );
-  }
-
-  private static mapX(x: number, config: GraphConfig): number {
-    return (
-      ((x - config.xRange[0]) / (config.xRange[1] - config.xRange[0])) *
-      (config.width - 2 * config.padding) +
-      config.padding
-    );
-  }
-
-  private static mapY(y: number, config: GraphConfig): number {
-    return (
-      config.height -
-      (((y - config.yRange[0]) / (config.yRange[1] - config.yRange[0])) *
-      (config.height - 2 * config.padding) +
-      config.padding)
-    );
-  }
-
   private static renderAxisLabels(config: GraphConfig) {
     const labels = [];
     const step = 1;
@@ -376,20 +424,12 @@ export class GraphVisualizer {
     return <g className="axis-labels">{labels}</g>;
   }
 
-  private static renderYIntercept(yIntercept: number, config: GraphConfig) {
-    const point: Point = { x: 0, y: yIntercept };
-    return this.renderSpecialPoint(point, config, 'y-intercept');
-  }
-
-  private static renderLabels(characteristics: FunctionCharacteristics, config: GraphConfig) {
-    return (
-      <g className="function-labels">
-        {/* Add any additional labels you want to show */}
-      </g>
-    );
-  }
-
   private static renderCircle(circleData: CircleData, config: GraphConfig) {
+    if (!circleData || !circleData.center) {
+      console.error('Invalid circle data:', circleData);
+      return null;
+    }
+
     const { center, radius } = circleData;
     const cx = this.mapX(center.x, config);
     const cy = this.mapY(center.y, config);
@@ -427,6 +467,10 @@ export class GraphVisualizer {
   }
 
   private static renderCirclePoints(circleData: CircleData, config: GraphConfig) {
+    if (!circleData || !circleData.center || !circleData.radius) {
+      return null;
+    }
+
     const { center, radius } = circleData;
     const points = [
       { x: center.x + radius, y: center.y }, // Right
@@ -489,12 +533,14 @@ export class GraphVisualizer {
   }
 
   private static renderTangentLines(
-    tangentLines: { point: Point; slope: number }[],
+    characteristics: FunctionCharacteristics,
     config: GraphConfig
   ) {
+    if (!characteristics.tangentLines) return null;
+
     return (
       <g className="tangent-lines">
-        {tangentLines.map((line, index) => {
+        {characteristics.tangentLines.map((line, index) => {
           const x1 = line.point.x - 5;
           const x2 = line.point.x + 5;
           const y1 = line.point.y - line.slope * 5;
@@ -523,6 +569,23 @@ export class GraphVisualizer {
           );
         })}
       </g>
+    );
+  }
+
+  private static mapX(x: number, config: GraphConfig): number {
+    return (
+      ((x - config.xRange[0]) / (config.xRange[1] - config.xRange[0])) *
+      (config.width - 2 * config.padding) +
+      config.padding
+    );
+  }
+
+  private static mapY(y: number, config: GraphConfig): number {
+    return (
+      config.height -
+      (((y - config.yRange[0]) / (config.yRange[1] - config.yRange[0])) *
+      (config.height - 2 * config.padding) +
+      config.padding)
     );
   }
 } 

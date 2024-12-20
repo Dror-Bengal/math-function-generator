@@ -1,0 +1,20 @@
+// Hebrew translations for function types and difficulty levels
+export const translations = {
+  easy: 'קל',
+  medium: 'בינוני',
+  hard: 'מתקדם',
+  polynomial: 'פולינום',
+  rational: 'פונקציה רציונלית',
+  trigonometric: 'פונקציה טריגונומטרית',
+  linear: 'פונקציה לינארית',
+  quadratic: 'פונקציה ריבועית',
+  generate: 'צור פונקציה חדשה',
+  title: 'חקר פונקציות אינטראקטיבי',
+  subtitle: 'כלי מתקדם לתרגול וחקירת פונקציות מתמטיות',
+  functionType: 'סוג הפונקציה',
+  investigationSteps: 'שלבי החקירה',
+  difficultyLevel: 'רמת קושי',
+  functionDisplay: 'הפונקציה הנתונה',
+  graphTitle: 'גרף הפונקציה',
+  circle: 'מעגל',
+}; 

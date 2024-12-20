@@ -1,25 +1,28 @@
-import { ChangeEvent } from 'react';
-
 export enum FunctionType {
   LINEAR = 'linear',
   QUADRATIC = 'quadratic',
+  CUBIC = 'cubic',
+  QUARTIC = 'quartic',
   POLYNOMIAL = 'polynomial',
   RATIONAL = 'rational',
+  CIRCLE = 'circle',
   TRIGONOMETRIC = 'trigonometric',
-  CIRCLE = 'circle'
+  UNKNOWN = 'unknown'
 }
+
+export type FunctionTypeString = `${FunctionType}`;
 
 export interface FunctionData {
   expression: string;
   points: number[];
-  type: "linear" | "quadratic" | "cubic" | "quartic" | "rational" | "circle" | "trigonometric";
+  type: FunctionType;
   characteristics?: FunctionCharacteristics | GeometricCharacteristics;
   func?: (x: number) => number;
 }
 
 // Add a specific interface for rational functions
-export interface RationalFunctionData extends Omit<FunctionData, 'points'> {
-  type: 'rational';
+export interface RationalFunctionData extends Omit<FunctionData, 'points' | 'type'> {
+  type: FunctionType.RATIONAL;
   numerator: number[];   // coefficients of numerator polynomial
   denominator: number[]; // coefficients of denominator polynomial
   func: (x: number) => number;
@@ -44,6 +47,8 @@ export interface FunctionCharacteristics {
   range: string | [number, number];  // Allow string for ranges like 'ℝ'
   asymptotes?: Asymptotes;          // Add asymptotes for rational functions
   period?: number;                  // For trigonometric functions
+  tangentLines?: Array<{ point: Point; slope: number }>;  // Add tangentLines property
+  type?: FunctionTypeString;
 }
 
 export interface Point {
@@ -59,12 +64,9 @@ export interface GeneratedFunction {
   latex?: string;  // LaTeX representation if needed
 }
 
-// Update FunctionTypeChangeEvent type
-type FunctionTypeChangeEvent = ChangeEvent<HTMLSelectElement>; 
-
 // Add circle-specific interface
 export interface CircleData extends Omit<FunctionData, 'type'> {
-  type: 'circle';
+  type: FunctionType.CIRCLE;
   center: Point;
   radius: number;
   equation: string;
@@ -101,9 +103,19 @@ export interface DifficultyLevel {
 
 // Add a specific interface for trigonometric functions
 export interface TrigonometricFunctionData extends Omit<FunctionData, 'type'> {
-  type: 'trigonometric';
+  type: FunctionType.TRIGONOMETRIC;
   amplitude: number;
   period: number;
   phase?: number;
   verticalShift?: number;
+}
+
+export interface Intervals {
+  increasing: string[];
+  decreasing: string[];
+}
+
+export interface AreaInfo {
+  between: [number, number];
+  value: number;
 }
