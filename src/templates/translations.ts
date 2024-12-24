@@ -32,5 +32,25 @@ export const translations = {
   graphAnalysisMode: "מצב ניתוח גרף",
   graphFirstInstructions: "התבונן בגרף וענה על השאלות הבאות",
   revealQuestions: "חשוף שאלות",
-  hideQuestions: "הסתר שאלות"
+  hideQuestions: "הסתר שאלות",
+
+  // New translations for Sketch-First mode
+  sketchMode: "מצב שרטוט",
+  startSketch: "התחל שרטוט",
+  clearSketch: "נקה שרטוט",
+  showSolution: "הצג פתרון",
+  hideSolution: "הסתר פתרון",
+  sketchInstructions: "שרטט את הפונקציה לפי הביטוי האלגברי",
+  sketchHint: "לחץ ועם אחת להתחלת השרטוט",
+  sketchHintDrawing: "לחץ פעם נוספת לסיום השרטוט",
+  compareGraphs: "השווה גרפים",
+  goodSketch: "שרטוט טוב! הגרף שלך קרוב לפתרון",
+  tryAgain: "נסה שוב, הגרף שלך רחוק מהפתרון",
+  sketchFirst: "שרטט תחילה את הגרף",
+  toggleMode: "החלף מצב שרטוט/צפייה",
+  drawingInstructions: "השתמש בעכבר או באצבע כדי לשרטט את הגרף",
+  drawingTips: "טיפים לשרטוט:",
+  drawingTip1: "• שים לב לנקודות החיתוך עם הצירים",
+  drawingTip2: "• שים לב לכיוון העלייה/ירידה",
+  drawingTip3: "• שים לב לשיפוע הפונקציה"
 }; 

@@ -12,10 +12,13 @@ import {
   FunctionType, 
   FunctionData, 
   CircleData,
-  FunctionCharacteristics 
+  FunctionCharacteristics,
+  Point 
 } from './types/FunctionTypes';
 import { translations } from './templates/translations';
 import { allTemplates } from './templates/questionTemplates';
+import { SketchGraph } from './components/SketchGraph';
+import { hebrewInvestigations, sketchInvestigations } from './templates/investigations';
 
 // Add type for select event handlers
 type DifficultyChangeEvent = ChangeEvent<HTMLSelectElement>;
@@ -30,12 +33,17 @@ interface Question {
 // Add constant for Graph-First mode
 const IS_GRAPH_FIRST = true;
 
-const MathQuestionGenerator: React.FC = () => {
+export default function App() {
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [functionType, setFunctionType] = useState<FunctionType>(FunctionType.LINEAR);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
   const [showQuestions, setShowQuestions] = useState<boolean>(false);
+  const [showSolution, setShowSolution] = useState<boolean>(false);
+  const [isSketchMode, setIsSketchMode] = useState(false);
+  const [sketchPoints, setSketchPoints] = useState<Point[]>([]);
+  const [sketchFeedback, setSketchFeedback] = useState<string>('');
+  const [sketchAccuracy, setSketchAccuracy] = useState<number | null>(null);
 
   // Update event handlers with proper types
   const handleDifficultyChange = (e: DifficultyChangeEvent) => {
@@ -207,6 +215,109 @@ const MathQuestionGenerator: React.FC = () => {
     );
   };
 
+  const handleSketchComplete = (points: Point[]) => {
+    setSketchPoints(points);
+    if (currentQuestion?.function && points.length > 0) {
+      validateSketch(points, currentQuestion.function);
+    }
+  };
+
+  const validateSketch = (sketch: Point[], solution: FunctionData | CircleData) => {
+    // Basic validation - can be enhanced later
+    if (solution.type === FunctionType.CIRCLE) return;
+    
+    const solutionPoints = generateSolutionPoints(solution as FunctionData);
+    let totalError = 0;
+    let matchedPoints = 0;
+
+    sketch.forEach(sketchPoint => {
+      const closestSolutionPoint = solutionPoints.reduce((closest, current) => {
+        const currentDist = Math.abs(current.x - sketchPoint.x);
+        const closestDist = Math.abs(closest.x - sketchPoint.x);
+        return currentDist < closestDist ? current : closest;
+      });
+
+      const error = Math.abs(closestSolutionPoint.y - sketchPoint.y);
+      if (error < 0.5) matchedPoints++;
+      totalError += error;
+    });
+
+    const accuracy = (matchedPoints / sketch.length) * 100;
+    setSketchAccuracy(accuracy);
+    
+    if (accuracy >= 80) {
+      setSketchFeedback(translations.goodSketch);
+    } else {
+      setSketchFeedback(translations.tryAgain);
+    }
+  };
+
+  const generateSolutionPoints = (data: FunctionData): Point[] => {
+    const xMin = -10;
+    const xMax = 10;
+    const step = 0.1;
+    const points: Point[] = [];
+
+    for (let x = xMin; x <= xMax; x += step) {
+      const y = evaluateFunction(x, data);
+      if (y !== undefined) {
+        points.push({ x, y });
+      }
+    }
+
+    return points;
+  };
+
+  const evaluateFunction = (x: number, data: FunctionData): number | undefined => {
+    if (!data.points || !Array.isArray(data.points)) {
+      console.error('Invalid points array:', data.points);
+      return undefined;
+    }
+
+    try {
+      switch (data.type) {
+        case FunctionType.LINEAR:
+          return data.points[0] * x + data.points[1];
+        case FunctionType.QUADRATIC:
+          return data.points[0] * x * x + data.points[1] * x + data.points[2];
+        case FunctionType.POLYNOMIAL:
+          return data.points[0] * x * x * x + data.points[1] * x * x + data.points[2] * x + data.points[3];
+        case FunctionType.RATIONAL: {
+          const n = data.points.length;
+          const mid = Math.floor(n / 2);
+          let num = 0, den = 0;
+          for (let i = 0; i < mid; i++) {
+            num += data.points[i] * Math.pow(x, mid - i - 1);
+          }
+          for (let i = mid; i < n; i++) {
+            den += data.points[i] * Math.pow(x, n - i - 1);
+          }
+          if (Math.abs(den) < 1e-10) return undefined;
+          const result = num / den;
+          if (!isFinite(result) || Math.abs(result) > 1e3) return undefined;
+          return result;
+        }
+        case FunctionType.TRIGONOMETRIC: {
+          const [a, b, c, d] = data.points;
+          return a * Math.sin(b * x + c) + d;
+        }
+        default:
+          return undefined;
+      }
+    } catch (error) {
+      console.error("Error evaluating function:", error);
+      return undefined;
+    }
+  };
+
+  // Get the appropriate investigation steps based on mode
+  const getInvestigationSteps = () => {
+    if (isSketchMode) {
+      return sketchInvestigations[difficulty];
+    }
+    return hebrewInvestigations[difficulty];
+  };
+
   return (
     <div className="min-h-screen font-heebo bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header Section */}
@@ -271,15 +382,26 @@ const MathQuestionGenerator: React.FC = () => {
                     >
                       {translations.generate}
                     </button>
-                    {currentQuestion && IS_GRAPH_FIRST && (
+                  </div>
+
+                  {currentQuestion && (
+                    <div className="flex gap-4">
                       <button
-                        onClick={() => setShowQuestions(!showQuestions)}
+                        onClick={() => setIsSketchMode(!isSketchMode)}
                         className="flex-1 py-3.5 px-4 border border-gray-300 rounded-xl shadow-md text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300"
                       >
-                        {showQuestions ? translations.hideQuestions : translations.showQuestions}
+                        {isSketchMode ? translations.graphFirst : translations.sketchFirst}
                       </button>
-                    )}
-                  </div>
+                      {isSketchMode && (
+                        <button
+                          onClick={() => setShowSolution(!showSolution)}
+                          className="flex-1 py-3.5 px-4 border border-gray-300 rounded-xl shadow-md text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300"
+                        >
+                          {showSolution ? translations.hideSolution : translations.showSolution}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {currentQuestion && showQuestions && (
@@ -288,7 +410,7 @@ const MathQuestionGenerator: React.FC = () => {
                       {translations.investigationSteps}
                     </h3>
                     <div className="space-y-4">
-                      {currentQuestion.investigations.map((investigation, index) => (
+                      {getInvestigationSteps().map((investigation, index) => (
                         <div key={index} className="flex items-start gap-4 text-right bg-white/60 p-3 rounded-xl hover:bg-white/80 transition-colors duration-200">
                           <input
                             type="checkbox"
@@ -319,8 +441,8 @@ const MathQuestionGenerator: React.FC = () => {
               <div className="lg:w-2/3">
                 <div className="text-right mb-4">
                   <h3 className="text-xl font-semibold text-gray-800">
-                    {translations.graphTitle}
-                    {currentQuestion && !showQuestions && (
+                    {isSketchMode ? translations.sketchMode : translations.graphTitle}
+                    {currentQuestion && !showQuestions && !isSketchMode && (
                       <span className="text-sm text-gray-500 mr-3">
                         {translations.graphFirstInstructions}
                       </span>
@@ -329,7 +451,34 @@ const MathQuestionGenerator: React.FC = () => {
                 </div>
                 <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-6">
                   {currentQuestion?.function ? (
-                    plotFunction(currentQuestion.function)
+                    isSketchMode ? (
+                      <>
+                        <SketchGraph
+                          onSketchComplete={handleSketchComplete}
+                          showSolution={showSolution}
+                          solutionPoints={currentQuestion.function.type !== FunctionType.CIRCLE ? 
+                            generateSolutionPoints(currentQuestion.function as FunctionData) : 
+                            []
+                          }
+                        />
+                        {sketchPoints.length > 0 && sketchFeedback && (
+                          <div className={`mt-4 p-4 rounded-xl text-right ${
+                            sketchAccuracy && sketchAccuracy >= 80 
+                              ? 'bg-green-50 text-green-800' 
+                              : 'bg-yellow-50 text-yellow-800'
+                          }`}>
+                            <p className="font-medium">{sketchFeedback}</p>
+                            {sketchAccuracy && (
+                              <p className="text-sm mt-1">
+                                דיוק: {sketchAccuracy.toFixed(1)}%
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      plotFunction(currentQuestion.function)
+                    )
                   ) : (
                     <div className="flex flex-col items-center justify-center min-h-[400px] text-center p-8">
                       <div className="w-24 h-24 mb-6 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 flex items-center justify-center">
@@ -367,6 +516,4 @@ const MathQuestionGenerator: React.FC = () => {
       </div>
     </div>
   );
-};
-
-export default MathQuestionGenerator;
+}
