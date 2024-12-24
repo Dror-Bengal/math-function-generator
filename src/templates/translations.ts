@@ -17,5 +17,11 @@ export const translations = {
   functionDisplay: 'הפונקציה הנתונה',
   graphTitle: 'גרף הפונקציה',
   circle: 'מעגל',
-  givenFunction: 'הפונקציה הנתונה'
+  givenFunction: 'הפונקציה הנתונה',
+
+  // New translations for welcome screen
+  welcomeMessage: "ברוכים הבאים למחולל הפונקציות",
+  startMessage: "בחרו את רמת הקושי וסוג הפונקציה, ולחצו על 'צור שאלה' כדי להתחיל",
+  selectDifficulty: "בחרו רמת קושי",
+  selectType: "בחרו סוג פונקציה"
 }; 
