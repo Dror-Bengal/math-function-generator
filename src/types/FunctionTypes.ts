@@ -78,6 +78,11 @@ export interface LinearFunctionCharacteristics extends BaseFunctionCharacteristi
   yIntercept: number;      // Keep for backward compatibility
   intersectionPoints: Point[]; // New consolidated property
   slope: number;
+  signIntervals?: {
+    positive: string[];    // Intervals where f(x) > 0
+    negative: string[];    // Intervals where f(x) < 0
+    zero: Point[];         // Points where f(x) = 0
+  };
 }
 
 export interface QuadraticFunctionCharacteristics extends BaseFunctionCharacteristics {
