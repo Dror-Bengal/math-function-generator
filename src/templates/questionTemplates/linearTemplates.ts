@@ -7,7 +7,11 @@ import { hebrewInvestigations } from '../investigations';
 const generateLinearFunction = (
   m: number,  // slope
   b: number,  // y-intercept
-  formatSlope: (m: number) => string = (m) => `${m}`,
+  formatSlope: (m: number) => string = (m) => {
+    if (m === 1) return 'x';
+    if (m === -1) return '-x';
+    return `${m}x`;
+  },
   formatIntercept: (b: number) => string = (b) => `${b}`
 ): FunctionData => {
   // Calculate intersection points
@@ -50,8 +54,15 @@ const generateLinearFunction = (
     signIntervals
   };
 
+  // Format the expression
+  let expression = 'f(x) = ';
+  expression += formatSlope(m);
+  if (b !== 0) {
+    expression += b > 0 ? ` + ${formatIntercept(b)}` : ` ${formatIntercept(b)}`;
+  }
+
   return {
-    expression: `f(x) = ${formatSlope(m)}x ${b >= 0 ? "+" : ""}${formatIntercept(b)}`,
+    expression,
     points: [m, b],
     type: FunctionType.LINEAR,
     characteristics

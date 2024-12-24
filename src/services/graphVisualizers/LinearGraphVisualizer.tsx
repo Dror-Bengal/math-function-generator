@@ -1,13 +1,38 @@
 import React from 'react';
 import Plot from 'react-plotly.js';
 import { PlotData } from 'plotly.js';
-import { FunctionType, FunctionCharacteristics, LinearFunctionCharacteristics, CircleData } from '../../types/FunctionTypes';
+import { FunctionType, FunctionCharacteristics, CircleData, Point } from '../../types/FunctionTypes';
 import { BaseGraphVisualizer, GraphConfig } from './BaseGraphVisualizer';
 import DebugLogger from '../../utils/debugLogger';
 
 const IS_DEBUG = process.env.NODE_ENV === 'development';
 
 export class LinearGraphVisualizer extends BaseGraphVisualizer {
+  private static createHoverLabel(color: string) {
+    return {
+      bgcolor: color,
+      font: { color: '#FFFFFF', size: 14 }
+    };
+  }
+
+  private static createPointTrace(points: Point[]) {
+    return {
+      x: points.map(p => p.x),
+      y: points.map(p => p.y)
+    };
+  }
+
+  private static formatInterval(interval: string) {
+    return interval
+      .replace(/([0-9.-]+)/g, num => parseFloat(num).toFixed(2))
+      .replace('∞', 'אינסוף')
+      .replace('-אינסוף', '−אינסוף');
+  }
+
+  private static formatPoint(p: Point): string {
+    return `\u202B(${p.x.toFixed(2)}, ${p.y.toFixed(2)})\u202C`;
+  }
+
   plot(
     func: ((x: number) => number | undefined) | CircleData,
     characteristics: FunctionCharacteristics,
@@ -63,14 +88,9 @@ export class LinearGraphVisualizer extends BaseGraphVisualizer {
 
     // Debug logging
     if (IS_DEBUG) {
-      let expression = `f(x) = ${func.toString()}`;
-      if ('points' in characteristics) {
-        const points = (characteristics as any).points;
-        if (Array.isArray(points) && points.length >= 2) {
-          const [m, b] = points;
-          expression = `f(x) = ${m}x ${b >= 0 ? '+' : ''}${b}`;
-        }
-      }
+      const slope = (characteristics as any).slope;
+      const yIntercept = (characteristics as any).yIntercept;
+      const expression = `f(x) = ${slope}x ${yIntercept >= 0 ? '+' : ''}${yIntercept}`;
 
       DebugLogger.logFunction({
         type: FunctionType.LINEAR,
@@ -86,98 +106,70 @@ export class LinearGraphVisualizer extends BaseGraphVisualizer {
       });
     }
 
-    // Create traces array starting with the main function
+    // Create traces
     const traces: Partial<PlotData>[] = [
       {
-        x: points.map(p => p.x),
-        y: points.map(p => p.y),
+        ...LinearGraphVisualizer.createPointTrace(points),
         type: 'scatter',
         mode: 'lines',
         line: { color: '#4F46E5', width: 2 }
       }
     ];
 
-    // Add sign intervals if available
-    const linearCharacteristics = characteristics as LinearFunctionCharacteristics;
-    if (linearCharacteristics.signIntervals) {
-      const { positive, negative, zero } = linearCharacteristics.signIntervals;
-
-      // Add positive interval indicators
-      positive.forEach(interval => {
-        const [start, end] = LinearGraphVisualizer.parseInterval(interval);
+    // Add sign intervals visualization
+    const signIntervals = (characteristics as any).signIntervals;
+    if (signIntervals) {
+      // Add positive intervals
+      if (signIntervals.positive.length > 0) {
         traces.push({
-          x: [start, end].map(x => LinearGraphVisualizer.clipToRange(x, mergedConfig.xRange)),
-          y: [maxY * 0.95, maxY * 0.95],
+          ...LinearGraphVisualizer.createPointTrace(points),
           type: 'scatter',
-          mode: 'lines',
-          line: { color: '#22C55E', width: 4 },
+          mode: 'none',
+          fill: 'tonexty',
+          fillcolor: 'rgba(34, 197, 94, 0.1)', // Light green
+          showlegend: false,
           hoverinfo: 'text',
-          hovertext: `f(x) > 0 for x ∈ ${interval}`,
-          hoverlabel: {
-            bgcolor: '#22C55E',
-            font: { color: '#FFFFFF' }
-          }
+          hovertext: `\u202Bהתחום שבו הפונקציה חיובית: ${signIntervals.positive.map(LinearGraphVisualizer.formatInterval).join(', ')}\u202C`,
+          hoverlabel: LinearGraphVisualizer.createHoverLabel('rgba(34, 197, 94, 0.9)')
         });
-      });
+      }
 
-      // Add negative interval indicators
-      negative.forEach(interval => {
-        const [start, end] = LinearGraphVisualizer.parseInterval(interval);
+      // Add negative intervals
+      if (signIntervals.negative.length > 0) {
         traces.push({
-          x: [start, end].map(x => LinearGraphVisualizer.clipToRange(x, mergedConfig.xRange)),
-          y: [minY * 0.95, minY * 0.95],
+          ...LinearGraphVisualizer.createPointTrace(points),
           type: 'scatter',
-          mode: 'lines',
-          line: { color: '#EF4444', width: 4 },
+          mode: 'none',
+          fill: 'tonexty',
+          fillcolor: 'rgba(239, 68, 68, 0.1)', // Light red
+          showlegend: false,
           hoverinfo: 'text',
-          hovertext: `f(x) < 0 for x ∈ ${interval}`,
-          hoverlabel: {
-            bgcolor: '#EF4444',
-            font: { color: '#FFFFFF' }
-          }
+          hovertext: `\u202Bהתחום שבו הפונקציה שלילית: ${signIntervals.negative.map(LinearGraphVisualizer.formatInterval).join(', ')}\u202C`,
+          hoverlabel: LinearGraphVisualizer.createHoverLabel('rgba(239, 68, 68, 0.9)')
         });
-      });
+      }
 
       // Add zero points
-      if (zero.length > 0) {
+      if (signIntervals.zero.length > 0) {
         traces.push({
-          x: zero.map(p => p.x),
-          y: zero.map(p => p.y),
+          ...LinearGraphVisualizer.createPointTrace(signIntervals.zero),
           type: 'scatter',
-          mode: 'markers',
+          mode: 'text+markers',
           marker: {
             color: '#6B7280',
             size: 10,
-            symbol: 'circle'
+            symbol: 'circle-dot'
           },
+          text: signIntervals.zero.map((p: Point) => LinearGraphVisualizer.formatPoint(p)),
+          textposition: 'top center',
+          showlegend: false,
           hoverinfo: 'text',
-          hovertext: zero.map(p => `f(${p.x.toFixed(2)}) = 0`),
-          hoverlabel: {
-            bgcolor: '#6B7280',
-            font: { color: '#FFFFFF' }
-          }
+          hovertext: signIntervals.zero.map((p: Point) => 
+            `\u202Bנקודת אפס: ${LinearGraphVisualizer.formatPoint(p)}\u202C`
+          ),
+          hoverlabel: LinearGraphVisualizer.createHoverLabel('rgba(107, 114, 128, 0.9)')
         });
       }
-    }
-
-    // Add intersection points if enabled
-    if (mergedConfig.showIntersectionPoints && roots.length > 0) {
-      traces.push({
-        x: roots.map(p => p.x),
-        y: roots.map(p => p.y),
-        type: 'scatter',
-        mode: 'text+markers',
-        marker: {
-          color: '#EF4444',
-          size: 8,
-          symbol: 'circle'
-        },
-        text: roots.map(p => `(${p.x.toFixed(1)}, ${p.y.toFixed(1)})`),
-        textposition: 'top center',
-        showlegend: false,
-        hoverinfo: 'text',
-        hovertext: roots.map(p => `(${p.x.toFixed(2)}, ${p.y.toFixed(2)})`)
-      });
     }
 
     const layout = BaseGraphVisualizer.createBaseLayout(mergedConfig);
@@ -190,34 +182,29 @@ export class LinearGraphVisualizer extends BaseGraphVisualizer {
           config={{
             displayModeBar: false,
             responsive: true,
-            scrollZoom: true
+            scrollZoom: true,
+            // Enhanced mobile touch support
+            modeBarButtonsToRemove: ['select2d', 'lasso2d'],
+            displaylogo: false,
+            showTips: true,
+            // Touch interaction settings
+            staticPlot: false,
+            toImageButtonOptions: {
+              format: 'png',
+              filename: 'graph',
+              height: 500,
+              width: 800,
+              scale: 2
+            }
           }}
           style={{
             width: '100%',
-            height: '100%'
+            height: '100%',
+            touchAction: 'pan-y pinch-zoom'
           }}
           useResizeHandler={true}
         />
       </div>
     );
-  }
-
-  private static parseInterval(interval: string): [number, number] {
-    const matches = interval.match(/[\d.-]+/g);
-    if (interval.includes('∞')) {
-      if (interval.startsWith('(')) {
-        return [parseFloat(matches?.[0] || '0'), 1000];
-      } else {
-        return [-1000, parseFloat(matches?.[0] || '0')];
-      }
-    }
-    return [
-      parseFloat(matches?.[0] || '0'),
-      parseFloat(matches?.[1] || '0')
-    ];
-  }
-
-  private static clipToRange(value: number, range: [number, number]): number {
-    return Math.max(range[0], Math.min(range[1], value));
   }
 } 
