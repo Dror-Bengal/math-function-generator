@@ -9,10 +9,10 @@ export const translations = {
   linear: 'לינארית',
   quadratic: 'ריבועית',
   generate: 'צור שאלה',
-  title: 'מחולל פונקציות מתמטיות',
-  subtitle: 'כלי לתרגול חקירת פונקציות',
+  title: 'מחולל פונקציות',
+  subtitle: 'כלי לתרגול ולמידה של פונקציות',
   functionType: 'סוג הפונקציה',
-  investigationSteps: 'שלבי החקירה',
+  investigationSteps: 'שלבי חקירה',
   difficultyLevel: 'רמת קושי',
   functionDisplay: 'הפונקציה הנתונה',
   graphTitle: 'גרף הפונקציה',
@@ -23,5 +23,14 @@ export const translations = {
   welcomeMessage: "ברוכים הבאים למחולל הפונקציות",
   startMessage: "בחרו את רמת הקושי וסוג הפונקציה, ולחצו על 'צור שאלה' כדי להתחיל",
   selectDifficulty: "בחרו רמת קושי",
-  selectType: "בחרו סוג פונקציה"
+  selectType: "בחרו סוג פונקציה",
+
+  // New translations for Graph-First mode
+  graphFirst: "ניתוח גרף",
+  showQuestions: "הצג שאלות",
+  analyzeGraph: "נתח את הגרף",
+  graphAnalysisMode: "מצב ניתוח גרף",
+  graphFirstInstructions: "התבונן בגרף וענה על השאלות הבאות",
+  revealQuestions: "חשוף שאלות",
+  hideQuestions: "הסתר שאלות"
 }; 

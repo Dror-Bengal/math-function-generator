@@ -31,19 +31,26 @@
 - [x] Added: RTL support for interval display
 - [x] Added: Mobile touch support for better interaction
 
-### Step 2.2: Question Cleanup 🟡
-- [ ] Remove questions about extreme points, edge behavior, etc.
-- [ ] Test: Verify removed questions don't appear
-- [ ] Expected output: Simpler, more focused question set
-- [ ] Status: Started planning the cleanup
+### Step 2.2: Question Cleanup ✅ 🟢
+- [x] Remove questions about extreme points, edge behavior, etc.
+- [x] Test: Verify removed questions don't appear
+- [x] Expected output: Simpler, more focused question set
+- [x] Status: Completed with streamlined investigation steps
+- [x] Added: Focus on core linear concepts (slope, intercepts)
+- [x] Added: Progressive difficulty in understanding relationships
+- [x] Removed: Unnecessary questions about domain, extrema, etc.
 
-## Phase 3: Graph Drawing Questions ⚪
-### Step 3.1: Graph-First Questions
-- [ ] Implement questions that show graph immediately
-- [ ] Test: Generate these questions and verify graph visibility
-- [ ] Expected output: Questions with graphs visible from start
+## Phase 3: Graph Drawing Questions 🟡
+### Step 3.1: Graph-First Questions ✅ 🟢
+- [x] Implement questions that show graph immediately
+- [x] Test: Generate these questions and verify graph visibility
+- [x] Expected output: Questions with graphs visible from start
+- [x] Status: Completed with enhanced investigation steps
+- [x] Added: Graph-first mode with hidden questions
+- [x] Added: Visual analysis focused questions
+- [x] Added: Progressive difficulty in graph interpretation
 
-### Step 3.2: Sketch-First Questions
+### Step 3.2: Sketch-First Questions ⚪
 - [ ] Add questions requiring initial sketching
 - [ ] Include answer graphs for verification
 - [ ] Test: Generate these questions and verify format
@@ -74,14 +81,16 @@
 5. Removed duplicate point labels and improved visualization
 6. Added mobile touch support for better interaction
 7. Improved code organization and reduced duplication
+8. Completed question cleanup with focus on linear function core concepts
+9. Implemented Graph-First Questions with visual analysis focus
 
 ## Next Steps:
-1. Continue work on question cleanup (Phase 2.2)
-   - Review current question templates
-   - Remove unnecessary complexity
-   - Focus on core linear function concepts
-2. Plan implementation of Graph Drawing Questions (Phase 3)
-3. Begin designing Two-Function Analysis features (Phase 4)
+1. Begin implementation of Sketch-First Questions (Phase 3.2)
+   - Design interface for student sketching
+   - Plan verification system
+2. Begin designing Two-Function Analysis features (Phase 4)
+   - Research best visualization methods
+   - Plan the implementation approach
 
 ## Notes:
 - All changes should maintain RTL support

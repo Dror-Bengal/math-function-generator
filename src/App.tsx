@@ -27,11 +27,15 @@ interface Question {
   investigations: string[];
 }
 
+// Add constant for Graph-First mode
+const IS_GRAPH_FIRST = true;
+
 const MathQuestionGenerator: React.FC = () => {
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
-  const [functionType, setFunctionType] = useState<FunctionType>(FunctionType.POLYNOMIAL);
+  const [functionType, setFunctionType] = useState<FunctionType>(FunctionType.LINEAR);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const [showQuestions, setShowQuestions] = useState<boolean>(false);
 
   // Update event handlers with proper types
   const handleDifficultyChange = (e: DifficultyChangeEvent) => {
@@ -57,7 +61,6 @@ const MathQuestionGenerator: React.FC = () => {
     
     try {
       const generatedFunction = selectedTemplate.generator();
-      // Validate the generated function has the required properties
       if (!generatedFunction || !generatedFunction.type) {
         console.error('Invalid function generated:', generatedFunction);
         return;
@@ -71,7 +74,12 @@ const MathQuestionGenerator: React.FC = () => {
 
       if (newQuestion) {
         setCurrentQuestion(null);
-        setTimeout(() => setCurrentQuestion(newQuestion), 0);
+        setShowQuestions(false);
+        setTimeout(() => {
+          setCurrentQuestion(newQuestion);
+          // In Graph-First mode, we don't show questions immediately
+          setShowQuestions(!IS_GRAPH_FIRST);
+        }, 0);
       }
     } catch (error) {
       console.error(`Error generating ${functionType} function:`, error);
@@ -256,15 +264,25 @@ const MathQuestionGenerator: React.FC = () => {
                     </select>
                   </div>
 
-                  <button
-                    onClick={generateQuestion}
-                    className="w-full py-3.5 px-4 border border-transparent rounded-xl shadow-md text-base font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 transform hover:scale-[1.02]"
-                  >
-                    {translations.generate}
-                  </button>
+                  <div className="flex gap-4">
+                    <button
+                      onClick={generateQuestion}
+                      className="flex-1 py-3.5 px-4 border border-transparent rounded-xl shadow-md text-base font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300 transform hover:scale-[1.02]"
+                    >
+                      {translations.generate}
+                    </button>
+                    {currentQuestion && IS_GRAPH_FIRST && (
+                      <button
+                        onClick={() => setShowQuestions(!showQuestions)}
+                        className="flex-1 py-3.5 px-4 border border-gray-300 rounded-xl shadow-md text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300"
+                      >
+                        {showQuestions ? translations.hideQuestions : translations.showQuestions}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
-                {currentQuestion && (
+                {currentQuestion && showQuestions && (
                   <div className="mt-8 bg-white/80 rounded-2xl p-6 shadow-sm">
                     <h3 className="text-xl font-semibold mb-4 text-right border-b border-gray-200 pb-3">
                       {translations.investigationSteps}
@@ -300,7 +318,14 @@ const MathQuestionGenerator: React.FC = () => {
               {/* Right side - Graph */}
               <div className="lg:w-2/3">
                 <div className="text-right mb-4">
-                  <h3 className="text-xl font-semibold text-gray-800">{translations.graphTitle}</h3>
+                  <h3 className="text-xl font-semibold text-gray-800">
+                    {translations.graphTitle}
+                    {currentQuestion && !showQuestions && (
+                      <span className="text-sm text-gray-500 mr-3">
+                        {translations.graphFirstInstructions}
+                      </span>
+                    )}
+                  </h3>
                 </div>
                 <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 p-6">
                   {currentQuestion?.function ? (
@@ -313,23 +338,23 @@ const MathQuestionGenerator: React.FC = () => {
                         </svg>
                       </div>
                       <h4 className="text-xl font-semibold text-gray-800 mb-3">
-                        {translations.welcomeMessage || "ברוכים הבאים למחולל הפונקציות"}
+                        {translations.welcomeMessage}
                       </h4>
                       <p className="text-gray-600 max-w-md mb-6">
-                        {translations.startMessage || "בחרו את רמת הקושי וסוג הפונקציה, ולחצו על 'צור שאלה' כדי להתחיל"}
+                        {translations.startMessage}
                       </p>
                       <div className="flex gap-4 text-sm">
                         <div className="flex items-center text-gray-600">
                           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span>{translations.selectDifficulty || "בחרו רמת קושי"}</span>
+                          <span>{translations.selectDifficulty}</span>
                         </div>
                         <div className="flex items-center text-gray-600">
                           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span>{translations.selectType || "בחרו סוג פונקציה"}</span>
+                          <span>{translations.selectType}</span>
                         </div>
                       </div>
                     </div>
