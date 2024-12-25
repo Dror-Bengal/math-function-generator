@@ -73,6 +73,43 @@
 - [ ] Test: Generate area-related questions
 - [ ] Expected output: Questions about regions between functions
 
+## Phase 5: Function-Specific Investigations Implementation ⚪
+### Step 5.1: Integration Setup
+- [ ] Update App.tsx to use function-specific investigations
+- [ ] Create mapping between function types and their investigations
+- [ ] Add logic to select appropriate investigation steps
+- [ ] Test: Verify correct investigation steps are shown for each type
+
+### Step 5.2: Linear Function Investigations
+- [ ] Implement easy level specific steps
+  - Slope identification
+  - Y-intercept analysis
+  - X-intercept calculation
+  - Rising/falling determination
+  - Positive/negative regions
+- [ ] Implement medium level specific steps
+  - Slope calculation
+  - Rate of change analysis
+  - Standard form conversion
+- [ ] Implement hard level specific steps
+  - Precise slope analysis
+  - Multiple form representations
+  - Angle analysis with x-axis
+
+### Step 5.3: Investigation UI Enhancement
+- [ ] Add visual indicators for investigation progress
+- [ ] Implement step-by-step guidance system
+- [ ] Add interactive elements for each investigation step
+- [ ] Test: Verify UI elements work correctly
+- [ ] Expected output: Clear, interactive investigation process
+
+### Step 5.4: Feedback System
+- [ ] Add validation for each investigation step
+- [ ] Implement hints system for difficult steps
+- [ ] Add progress tracking per investigation
+- [ ] Test: Verify feedback accuracy
+- [ ] Expected output: Helpful, accurate feedback for each step
+
 ## Recent Progress Summary:
 1. Completed axis labeling with enhanced styling and RTL support
 2. Completed intersection points consolidation
@@ -83,6 +120,7 @@
 7. Improved code organization and reduced duplication
 8. Completed question cleanup with focus on linear function core concepts
 9. Implemented Graph-First Questions with visual analysis focus
+10. Added function-specific investigation steps structure
 
 ## Next Steps:
 1. Begin implementation of Sketch-First Questions (Phase 3.2)
@@ -91,6 +129,10 @@
 2. Begin designing Two-Function Analysis features (Phase 4)
    - Research best visualization methods
    - Plan the implementation approach
+3. Start implementing Function-Specific Investigations (Phase 5)
+   - Begin with integration setup
+   - Focus on linear function specific steps
+   - Design enhanced UI for investigations
 
 ## Notes:
 - All changes should maintain RTL support

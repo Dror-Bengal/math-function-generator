@@ -19,8 +19,12 @@ import { translations } from './templates/translations';
 import { allTemplates } from './templates/questionTemplates';
 import { SketchGraph } from './components/SketchGraph';
 import { hebrewInvestigations, sketchInvestigations } from './templates/investigations';
+import { Header } from './components/Header';
+import { GraphControls } from './components/GraphControls';
 
-// Add type for select event handlers
+// ============================================================================
+// Type Definitions & Interfaces
+// ============================================================================
 type DifficultyChangeEvent = ChangeEvent<HTMLSelectElement>;
 type FunctionTypeChangeEvent = ChangeEvent<HTMLSelectElement>;
 
@@ -30,10 +34,18 @@ interface Question {
   investigations: string[];
 }
 
-// Add constant for Graph-First mode
+// ============================================================================
+// Constants
+// ============================================================================
 const IS_GRAPH_FIRST = true;
 
+// ============================================================================
+// Main App Component
+// ============================================================================
 export default function App() {
+  // ============================================================================
+  // State Management
+  // ============================================================================
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
   const [functionType, setFunctionType] = useState<FunctionType>(FunctionType.LINEAR);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
@@ -45,7 +57,9 @@ export default function App() {
   const [sketchFeedback, setSketchFeedback] = useState<string>('');
   const [sketchAccuracy, setSketchAccuracy] = useState<number | null>(null);
 
-  // Update event handlers with proper types
+  // ============================================================================
+  // Event Handlers
+  // ============================================================================
   const handleDifficultyChange = (e: DifficultyChangeEvent) => {
     setDifficulty(e.target.value as "easy" | "medium" | "hard");
   };
@@ -54,6 +68,9 @@ export default function App() {
     setFunctionType(e.target.value as FunctionType);
   };
 
+  // ============================================================================
+  // Function Generation & Question Management
+  // ============================================================================
   const generateQuestion = () => {
     let newQuestion: Question | null = null;
     const templateKey = functionType.toLowerCase() as keyof typeof allTemplates;
@@ -85,7 +102,6 @@ export default function App() {
         setShowQuestions(false);
         setTimeout(() => {
           setCurrentQuestion(newQuestion);
-          // In Graph-First mode, we don't show questions immediately
           setShowQuestions(!IS_GRAPH_FIRST);
         }, 0);
       }
@@ -94,22 +110,24 @@ export default function App() {
     }
   };
 
+  // ============================================================================
+  // Function Visualization
+  // ============================================================================
   const visualizeFunction = (
     func: ((x: number) => number | undefined) | undefined,
     characteristics: FunctionCharacteristics,
     data?: FunctionData | CircleData
   ): JSX.Element | null => {
     if (characteristics.type === FunctionType.CIRCLE && data) {
-      // Transform circle data from points to center and radius format
       const circleData: CircleData = {
         type: FunctionType.CIRCLE,
         expression: data.expression,
         characteristics,
         center: { 
-          x: data.points?.[0] || 0, // h (center x)
-          y: data.points?.[1] || 0  // k (center y)
+          x: data.points?.[0] || 0,
+          y: data.points?.[1] || 0
         },
-        radius: data.points?.[2] || 1, // r (radius)
+        radius: data.points?.[2] || 1,
         points: data.points || [],
         equation: data.expression || ''
       };
@@ -147,8 +165,10 @@ export default function App() {
     return visualizer.plot(func, characteristics);
   };
 
+  // ============================================================================
+  // Function Evaluation & Plotting
+  // ============================================================================
   const plotFunction = (data: FunctionData | CircleData) => {
-    // Validate input data
     if (!data || !data.type) {
       console.error('Invalid function data:', data);
       return null;
@@ -160,7 +180,6 @@ export default function App() {
       return null;
     }
 
-    // Ensure characteristics has a valid type
     characteristics.type = characteristics.type || data.type;
 
     const evaluateFunction = (x: number): number | undefined => {
@@ -197,7 +216,7 @@ export default function App() {
             return a * Math.sin(b * x + c) + d;
           }
           case FunctionType.CIRCLE:
-            return undefined; // Circle functions are handled differently
+            return undefined;
           default:
             console.error(`Unsupported function type: ${data.type}`);
             return undefined;
@@ -215,6 +234,9 @@ export default function App() {
     );
   };
 
+  // ============================================================================
+  // Sketch Handling & Validation
+  // ============================================================================
   const handleSketchComplete = (points: Point[]) => {
     setSketchPoints(points);
     if (currentQuestion?.function && points.length > 0) {
@@ -223,7 +245,6 @@ export default function App() {
   };
 
   const validateSketch = (sketch: Point[], solution: FunctionData | CircleData) => {
-    // Basic validation - can be enhanced later
     if (solution.type === FunctionType.CIRCLE) return;
     
     const solutionPoints = generateSolutionPoints(solution as FunctionData);
@@ -310,7 +331,9 @@ export default function App() {
     }
   };
 
-  // Get the appropriate investigation steps based on mode
+  // ============================================================================
+  // Investigation Steps Management
+  // ============================================================================
   const getInvestigationSteps = () => {
     if (isSketchMode) {
       return sketchInvestigations[difficulty];
@@ -318,30 +341,32 @@ export default function App() {
     return hebrewInvestigations[difficulty];
   };
 
+  // ============================================================================
+  // UI Rendering
+  // ============================================================================
   return (
     <div className="min-h-screen font-heebo bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header Section */}
-      <header className="py-8 px-4 text-center bg-white/40 backdrop-blur-sm shadow-sm">
-        <h1 className="text-4xl sm:text-5xl font-bold text-gray-800 mb-3 animate-fade-in">
-          {translations.title}
-        </h1>
-        <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
-          {translations.subtitle}
-        </p>
-      </header>
+      <Header 
+        title={translations.title}
+        subtitle={translations.subtitle}
+      />
 
-      {/* Main Content */}
+      {/* Main Content Container */}
       <div className="max-w-8xl mx-auto px-4 py-6">
         <div className="bg-white/80 backdrop-blur-sm shadow-xl sm:rounded-3xl sm:p-8">
           <div className="max-w-full mx-auto">
             <div className="flex flex-col lg:flex-row gap-8">
-              {/* Left side - Controls */}
+              
+              {/* Left Panel - Controls & Function Info */}
               <div className="lg:w-1/3 space-y-6 bg-white/90 p-6 rounded-2xl shadow-md">
                 <h2 className="text-2xl font-bold text-gray-900 text-right border-b border-gray-200 pb-4">
                   {currentQuestion?.function?.expression || translations.givenFunction}
                 </h2>
                 
+                {/* Control Panel */}
                 <div className="space-y-5">
+                  {/* Difficulty Selector */}
                   <div className="space-y-2">
                     <label className="block text-base font-medium text-gray-700 text-right">
                       {translations.difficultyLevel}
@@ -357,6 +382,7 @@ export default function App() {
                     </select>
                   </div>
 
+                  {/* Function Type Selector */}
                   <div className="space-y-2">
                     <label className="block text-base font-medium text-gray-700 text-right">
                       {translations.functionType}
@@ -375,6 +401,7 @@ export default function App() {
                     </select>
                   </div>
 
+                  {/* Action Buttons */}
                   <div className="flex gap-4">
                     <button
                       onClick={generateQuestion}
@@ -384,26 +411,24 @@ export default function App() {
                     </button>
                   </div>
 
+                  {/* Mode Toggle Buttons */}
                   {currentQuestion && (
-                    <div className="flex gap-4">
-                      <button
-                        onClick={() => setIsSketchMode(!isSketchMode)}
-                        className="flex-1 py-3.5 px-4 border border-gray-300 rounded-xl shadow-md text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300"
-                      >
-                        {isSketchMode ? translations.graphFirst : translations.sketchFirst}
-                      </button>
-                      {isSketchMode && (
-                        <button
-                          onClick={() => setShowSolution(!showSolution)}
-                          className="flex-1 py-3.5 px-4 border border-gray-300 rounded-xl shadow-md text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-300"
-                        >
-                          {showSolution ? translations.hideSolution : translations.showSolution}
-                        </button>
-                      )}
-                    </div>
+                    <GraphControls
+                      isSketchMode={isSketchMode}
+                      showSolution={showSolution}
+                      onSketchModeToggle={() => setIsSketchMode(!isSketchMode)}
+                      onSolutionToggle={() => setShowSolution(!showSolution)}
+                      translations={{
+                        graphFirst: translations.graphFirst,
+                        sketchFirst: translations.sketchFirst,
+                        showSolution: translations.showSolution,
+                        hideSolution: translations.hideSolution
+                      }}
+                    />
                   )}
                 </div>
 
+                {/* Investigation Steps Panel */}
                 {currentQuestion && showQuestions && (
                   <div className="mt-8 bg-white/80 rounded-2xl p-6 shadow-sm">
                     <h3 className="text-xl font-semibold mb-4 text-right border-b border-gray-200 pb-3">
@@ -437,7 +462,7 @@ export default function App() {
                 )}
               </div>
 
-              {/* Right side - Graph */}
+              {/* Right Panel - Graph Display */}
               <div className="lg:w-2/3">
                 <div className="text-right mb-4">
                   <h3 className="text-xl font-semibold text-gray-800">
