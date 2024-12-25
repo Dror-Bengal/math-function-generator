@@ -50,11 +50,15 @@
 - [x] Added: Visual analysis focused questions
 - [x] Added: Progressive difficulty in graph interpretation
 
-### Step 3.2: Sketch-First Questions ⚪
-- [ ] Add questions requiring initial sketching
-- [ ] Include answer graphs for verification
-- [ ] Test: Generate these questions and verify format
-- [ ] Expected output: Questions without initial graphs but with solution graphs
+### Step 3.2: Sketch-First Questions ✅ 🟢
+- [x] Add questions requiring initial sketching
+- [x] Include answer graphs for verification
+- [x] Test: Generate these questions and verify format
+- [x] Expected output: Questions without initial graphs but with solution graphs
+- [x] Added: Enhanced feedback with accuracy percentage
+- [x] Added: Color-coded sketch lines based on accuracy
+- [x] Added: Clear instructions and drawing tips
+- [x] Added: Improved solution display with dotted lines
 
 ## Phase 4: Two-Function Analysis ⚪
 ### Step 4.1: Basic Two-Function Setup

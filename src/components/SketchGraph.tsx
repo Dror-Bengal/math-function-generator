@@ -12,6 +12,8 @@ interface SketchGraphProps {
   onSketchComplete?: (points: Point[]) => void;
   showSolution?: boolean;
   solutionPoints?: Point[];
+  accuracy?: number | null;
+  feedback?: string;
 }
 
 export const SketchGraph: React.FC<SketchGraphProps> = ({
@@ -21,7 +23,9 @@ export const SketchGraph: React.FC<SketchGraphProps> = ({
   yRange = [-10, 10],
   onSketchComplete,
   showSolution = false,
-  solutionPoints = []
+  solutionPoints = [],
+  accuracy = null,
+  feedback = ''
 }) => {
   const [sketchPoints, setSketchPoints] = useState<Point[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -60,13 +64,12 @@ export const SketchGraph: React.FC<SketchGraphProps> = ({
       y: event.points[0].y
     };
 
-    // Only add point if it's far enough from the last point
     const distance = Math.sqrt(
       Math.pow(point.x - lastPoint.x, 2) + 
       Math.pow(point.y - lastPoint.y, 2)
     );
 
-    if (distance > 0.1) { // Minimum distance between points
+    if (distance > 0.1) {
       console.log('Adding point:', point);
       setSketchPoints(prev => [...prev, point]);
       setLastPoint(point);
@@ -78,7 +81,10 @@ export const SketchGraph: React.FC<SketchGraphProps> = ({
     setSketchPoints([]);
     setIsDrawing(false);
     setLastPoint(null);
-  }, []);
+    if (onSketchComplete) {
+      onSketchComplete([]);
+    }
+  }, [onSketchComplete]);
 
   const traces: Partial<PlotData>[] = [
     // Grid lines
@@ -104,7 +110,12 @@ export const SketchGraph: React.FC<SketchGraphProps> = ({
       y: sketchPoints.map(p => p.y),
       type: 'scatter',
       mode: 'lines',
-      line: { color: '#4F46E5', width: 2.5 },
+      line: { 
+        color: accuracy !== null ? 
+          (accuracy >= 80 ? '#22C55E' : '#EF4444') : 
+          '#4F46E5', 
+        width: 2.5 
+      },
       name: 'השרטוט שלך'
     }
   ];
@@ -204,6 +215,21 @@ export const SketchGraph: React.FC<SketchGraphProps> = ({
           }}
         />
       </div>
+
+      {feedback && (
+        <div className={`p-4 rounded-xl text-right ${
+          accuracy !== null && accuracy >= 80 
+            ? 'bg-green-50 text-green-800' 
+            : 'bg-yellow-50 text-yellow-800'
+        }`}>
+          <p className="font-medium">{feedback}</p>
+          {accuracy !== null && (
+            <p className="text-sm mt-1">
+              דיוק: {accuracy.toFixed(1)}%
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="bg-blue-50 p-4 rounded-xl">
         <h5 className="font-medium text-blue-900 mb-2 text-right">{translations.drawingTips}</h5>

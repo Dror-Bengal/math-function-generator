@@ -52,5 +52,7 @@ export const translations = {
   drawingTips: "טיפים לשרטוט:",
   drawingTip1: "• שים לב לנקודות החיתוך עם הצירים",
   drawingTip2: "• שים לב לכיוון העלייה/ירידה",
-  drawingTip3: "• שים לב לשיפוע הפונקציה"
+  drawingTip3: "• שים לב לשיפוע הפונקציה",
+  investigationMode: 'חקירת פונקציה',
+  pointsDrawn: 'נקודות שורטטו'
 }; 
